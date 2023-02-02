@@ -1,14 +1,16 @@
 cabal-version:       >=1.10
 name:                BoFunComplexity
 version:             0.9.0.0
--- synopsis:
--- description:
+synopsis:            Computing Level-p-complexity of Boolean functions (with Haskell)
+description:
+  Open GitHub repository with Haskell source code accompanying the pre-print "Level-p-complexity of Boolean Functions using Thinning, Memoization, and Polynomials".
+homepage:            https://github.com/juliajansson/BoFunComplexity
 -- bug-reports:
 license:             BSD3
--- license-file:        LICENSE
+license-file:        ../LICENSE
 author:              Patrik Jansson and Julia Jansson
 maintainer:          julia.jansson@gmail.com
--- copyright:
+
 category:            Math
 build-type:          Simple
 extra-source-files:  README.md
