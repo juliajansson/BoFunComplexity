@@ -1,0 +1,27 @@
+cabal-version:       >=1.10
+name:                BoFunComplexity
+version:             0.9.0.0
+-- synopsis:
+-- description:
+-- bug-reports:
+license:             BSD3
+-- license-file:        LICENSE
+author:              Patrik Jansson and Julia Jansson
+maintainer:          julia.jansson@gmail.com
+-- copyright:
+category:            Math
+build-type:          Simple
+extra-source-files:  README.md
+
+library
+  exposed-modules:     BDD.Examples, BDD.Ordering, PolyCmp, Algor, Thin, Memo, All, AllProp
+  other-modules:       DSLsofMath.Algebra, DSLsofMath.FunExp, DSLsofMath.PSDS
+  other-extensions:    ScopedTypeVariables, UndecidableInstances, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, GADTs
+  build-depends:       base >=4.13 && <4.17,
+                       containers >= 0.6.2.1,
+                       decision-diagrams >=0.2,
+                       size-based >= 0.1.3.0,
+                       memoize >= 1.1,
+                       QuickCheck
+  hs-source-dirs:      .
+  default-language:    Haskell2010
