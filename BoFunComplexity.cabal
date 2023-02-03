@@ -5,9 +5,8 @@ synopsis:            Computing Level-p-complexity of Boolean functions (with Has
 description:
   Open GitHub repository with Haskell source code accompanying the pre-print "Level-p-complexity of Boolean Functions using Thinning, Memoization, and Polynomials".
 homepage:            https://github.com/juliajansson/BoFunComplexity
--- bug-reports:
 license:             BSD3
-license-file:        ../LICENSE
+license-file:        LICENSE
 author:              Patrik Jansson and Julia Jansson
 maintainer:          julia.jansson@gmail.com
 
@@ -26,5 +25,5 @@ library
                        size-based >= 0.1.3.0,
                        memoize >= 1.1,
                        QuickCheck
-  hs-source-dirs:      .
+  hs-source-dirs:      Haskell
   default-language:    Haskell2010
