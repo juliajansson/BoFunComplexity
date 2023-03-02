@@ -1,0 +1,33 @@
+* Explanation
++ Check the talk slides or the paper of arXiv.
+* Example runs
+** fAC ~= same [x1,x2,x3] ==> same [x4,x5]
+*** Four remaining polynomials:
+ps5 :: S.Set (Poly Rational)
+ps5 = genAlgThinMemoPoly 5 fAC
+*** Polynomials paired with their respective decision trees
++ This is not shown in the paper, nor in the talk:
+genAlgThinMemoBoth 5 fAC
+
+let t = Res True; f = Res False; var i = Pick f t; nvar i = Pick i t f
+in 
+[ Both (P [2 % 1,6 % 1,(-10) % 1,8 % 1,(-4) % 1])
+       (Pick 4 (Pick 4 t (Pick 1 (Pick 1 (var 1) t) (Pick 1 t (nvar 1)))) (Pick 4 (Pick 1 (Pick 1 (var 1) t) (Pick 1 t (nvar 1))) t))
+, Both (P [4 % 1,(-2) % 1,(-3) % 1,8 % 1,(-2) % 1]) 
+       (Pick 1 (Pick 1 (Pick 2 (Pick 2 t (var 1)) (Pick 1 (var 1) t)) t) (Pick 1 t (Pick 1 t (Pick 1 (nvar 1) (var 1)))))
+, Both (P [5 % 1,(-8) % 1,8 % 1,0 % 1,0 % 1])
+       (Pick 1 (Pick 1 (Pick 1 (Pick 1 (nvar 1) (var 1)) t) t) (Pick 1 t (Pick 1 t (Pick 1 (nvar 1) (var 1)))))
+, Both (P [5 % 1,(-8) % 1,9 % 1,0 % 1,(-2) % 1])
+       (Pick 1 (Pick 1 (Pick 1 (Pick 1 (nvar 1) (var 1)) t) t) (Pick 1 t (Pick 2 (Pick 1 t (nvar 1)) (Pick 2 (nvar 1) t))))
+]
++ Note that the indices are "local": repeated Pick 1 just means pick
+  the first _remaining_ variable repeatedly.
++ Also note that we just get one dectree for each polynomial - there
+  are usually many dectrees with the same polynomial.
+*** TODO Polynomials and all corresponding dectrees
++ It should be possible to define an instance which stores a
+  polynomial p together with the full equivalence class of dectrees
+  which map to that p.
++ Roughly:
+res b = (res b, S.singleton (res b))
+pic i (p0, ts0) (p1, ts1) = (pic i p0 p1, {pic i t0 t1 | t0 <- ts0, t1 <- ts1})
