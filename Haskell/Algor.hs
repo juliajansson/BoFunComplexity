@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-
-An attempt at a rational reconstruction of the algorithm generation.
+Algorithm generation.
 -}
 
 module Algor where
