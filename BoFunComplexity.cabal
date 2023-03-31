@@ -30,3 +30,15 @@ library
                        size-based >= 0.1.3.0
   hs-source-dirs:      Haskell
   default-language:    Haskell2010
+
+executable main
+  main-is:             Main.hs
+  other-modules:       Util, BoFun, Threshold, DSLsofMath.Algebra, DSLsofMath.FunExp, DSLsofMath.PSDS, PolynomialExtra, PiecewisePoly
+  hs-source-dirs:      Haskell
+  default-language:    Haskell2010
+  build-depends:       base >=4.13 && <4.19,
+                       containers >= 0.6.2.1,
+                       free >= 5.2,
+                       memoize >= 1.1,
+                       mtl >= 2.3.1,
+                       multiset >= 0.3.4.3
