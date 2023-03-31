@@ -9,7 +9,7 @@ import Prelude (Int, Double,
                 Ord, Ordering, (<), (<=), (>=), compare,
                 Eq, Bool, (==), (&&), otherwise, snd,
                 error, (.),
-                (++), zipWith, map, head, tail, init, last, take, reverse, length, replicate)
+                (++), zipWith, map, null, head, tail, init, last, take, reverse, length, replicate)
 import qualified Prelude
 import DSLsofMath.FunExp
 import DSLsofMath.Algebra (Additive((+),zero), AddGroup(negate), (-),
@@ -17,7 +17,8 @@ import DSLsofMath.Algebra (Additive((+),zero), AddGroup(negate), (-),
                            Multiplicative((*),one), 
                            MulGroup(recip), (/), Field, (/),
                            Algebraic(sqrt),
-                           Transcendental(pi,sin,cos,exp) )
+                           Transcendental(pi,sin,cos,exp),
+                           ifThenElse)
 \end{code}
 
 Chapter 6. Taylor and Maclaurin series
@@ -293,8 +294,10 @@ normalPoly :: (Eq a, Additive a) => Poly a -> Poly a
 normalPoly (P cs) = P (normalL cs)
 
 normalL :: (Eq a, Additive a) => [a] -> [a]
-normalL xs | isZeroL xs = []
-normalL (x:rest) = x : normalL rest
+normalL [] = []
+normalL (x : xs) = if x == zero && null ys then [] else x : ys
+  where
+  ys = normalL xs
 
 eqPoly :: (Eq a, Additive a) => Poly a -> Poly a -> Bool
 eqPoly p1 p2 = let p1L = unP (normalPoly p1)
