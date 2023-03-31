@@ -74,3 +74,6 @@ dfs outgoing = h where
 
 dfs' :: (Ord a) => (a -> [a]) -> a -> Set.Set a
 dfs' outgoing start = execState (dfs outgoing start) Set.empty
+
+class (Monoid a) => Group a where
+  invert :: a -> a

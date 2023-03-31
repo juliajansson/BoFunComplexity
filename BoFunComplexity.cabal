@@ -17,7 +17,7 @@ tested-with: GHC==9.0.2
 
 library
   exposed-modules:     BDD.Examples, BDD.Ordering, PolyCmp, Algor, Thin, Memo, All, AllProp
-  other-modules:       Util, BoFun, Threshold, DSLsofMath.Algebra, DSLsofMath.FunExp, DSLsofMath.PSDS
+  other-modules:       Util, BoFun, Threshold, DSLsofMath.Algebra, DSLsofMath.FunExp, DSLsofMath.PSDS, PolynomialExtra
   other-extensions:    ScopedTypeVariables, UndecidableInstances, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, GADTs
   build-depends:       QuickCheck,
                        base >=4.13 && <4.19,
