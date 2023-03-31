@@ -17,12 +17,13 @@ tested-with: GHC==9.0.2
 
 library
   exposed-modules:     BDD.Examples, BDD.Ordering, PolyCmp, Algor, Thin, Memo, All, AllProp
-  other-modules:       Util, BoFun, DSLsofMath.Algebra, DSLsofMath.FunExp, DSLsofMath.PSDS
+  other-modules:       Util, BoFun, Threshold, DSLsofMath.Algebra, DSLsofMath.FunExp, DSLsofMath.PSDS
   other-extensions:    ScopedTypeVariables, UndecidableInstances, FlexibleContexts, FlexibleInstances, TypeSynonymInstances, GADTs
   build-depends:       QuickCheck,
                        base >=4.13 && <4.19,
                        containers >= 0.6.2.1,
                        decision-diagrams >=0.2,
+                       free >= 5.2,
                        memoize >= 1.1,
                        mtl >= 2.3.1,
                        multiset >= 0.3.4.3,
