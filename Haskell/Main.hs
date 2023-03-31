@@ -15,14 +15,14 @@ import PiecewisePoly
 import Threshold
 
 computeMinStep :: (Show f, BoFun f i) => Endo (f -> PiecewisePoly Rational)
-computeMinStep = Endo $ \r f -> if isJust (isConst f)
+computeMinStep = Endo $ \recCall fun -> if isJust (isConst fun)
   then zero
   else one + minPWs $ do
-    i <- variables f
+    i <- variables fun
     let
       [a, b] = do
         (value, factor) <- [(False, mempty), (True, one - mempty)]
-        return $ factor * r (setBit (i, value) f)
+        return $ factor * recCall (setBit (i, value) fun)
     return $ a + b
 
 computeMin :: (Show f, BoFun f i, Memoizable f) => f -> PiecewisePoly Rational
