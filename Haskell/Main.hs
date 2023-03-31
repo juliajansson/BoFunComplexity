@@ -28,5 +28,10 @@ computeMinStep = Endo $ \recCall fun -> if isJust (isConst fun)
 computeMin :: (Show f, BoFun f i, Memoizable f) => f -> PiecewisePoly Rational
 computeMin = fix $ appEndo computeMinStep >>> traceMemoize
 
+maj3_3 :: PiecewisePoly Rational
+maj3_3 = computeMin $ Threshold.iteratedMaj3 3
+
 main :: IO ()
-main = printPW $ computeMin $ Threshold.iteratedMaj3 3
+main = printPW $ maj3_3
+
+maj5_2 = computeMin $ Threshold.iteratedMaj5 2

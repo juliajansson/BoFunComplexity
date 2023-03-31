@@ -195,6 +195,11 @@ iteratedMaj3 :: Int -> IteratedThresholdFun'
 iteratedMaj3 0 = Pure ()
 iteratedMaj3 n = Free $ thresholdFunReplicate (thresholdFair 2) $ iteratedMaj3 $ n - 1
 
+iteratedMaj5 :: Int -> IteratedThresholdFun'
+iteratedMaj5 0 = Pure ()
+iteratedMaj5 n = Free $ thresholdFunReplicate (thresholdFair 3) $ iteratedMaj5 $ n - 1
+
+
 {-
 The number s_n of nodes reachable from iteratedMaj3 n is given by the following recurrence:
 * s_0 = 3,
