@@ -40,5 +40,5 @@ executable main
                        containers >= 0.6.2.1,
                        free >= 5.2,
                        memoize >= 1.1,
-                       mtl >= 2.3.1,
+                       mtl >= 2.2,
                        multiset >= 0.3.4.3
