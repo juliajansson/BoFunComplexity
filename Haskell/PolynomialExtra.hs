@@ -234,7 +234,7 @@ similar' = (unP *** unP) >>> zipZero >>> equalRatio >>> isJust
 
 -- Determine if two polynomials are the same over the rationals up to units.
 similar :: (Eq a, Ring a) => (Poly a, Poly a) -> Bool
-similar (p, q) = p == q || similar' (p, q) where
+similar (p, q) = p == q || similar' (p, q)
 
 viewZero :: (Additive a) => [a] -> (a, [a])
 viewZero [] = (zero, [])
