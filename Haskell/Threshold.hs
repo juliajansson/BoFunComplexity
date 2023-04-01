@@ -14,7 +14,7 @@ import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), Eq2(..), Ord2(..), Sh
 import Data.Function.Memoize (Memoizable(..), deriveMemoizable, deriveMemoize)
 import Data.Maybe (Maybe(..))
 import qualified Data.MultiSet as MultiSet
-import Prelude hiding ((+), (-), negate)
+import Prelude hiding ((+), (-), negate, sum)
 
 import DSLsofMath.Algebra (Additive(..), AddGroup(..), (-), sum)
 
@@ -57,8 +57,9 @@ thresholdIsConst (Threshold (nt, nf)) = if
   | nf <= 0 -> Just False
   | otherwise -> Nothing
 
-thresholdFair :: Int -> Threshold
-thresholdFair = duplicate >>> Threshold
+-- A majority threshold.
+thresholdMaj :: Int -> Threshold
+thresholdMaj = duplicate >>> Threshold
 
 
 -- A threshold-type Boolean function.
@@ -133,7 +134,7 @@ instance (Ord f, BoFun f i) => BoFun (ThresholdFun f) (Int, i) where
     return (i, v)
 
   setBit ((i, v), val) (ThresholdFun t us) = case isConst u' of
-    Just val -> thresholdFunNormalize $ ThresholdFun t' us'
+    Just _ -> thresholdFunNormalize $ ThresholdFun t' us'
     Nothing -> ThresholdFun t $ MultiSet.insert u' us'
     where
     (u, _) = MultiSet.toAscOccurList us !! i
@@ -189,30 +190,61 @@ instance BoFun IteratedThresholdFun' [Int] where
 -- Example Boolean functions.
 
 maj5 :: ThresholdFun (Maybe Bool)
-maj5 = thresholdFunReplicate (thresholdFair 3) Nothing
+maj5 = thresholdFunReplicate (thresholdMaj 3) Nothing
 
-iteratedMaj3 :: Int -> IteratedThresholdFun'
-iteratedMaj3 0 = Pure ()
-iteratedMaj3 n = Free $ thresholdFunReplicate (thresholdFair 2) $ iteratedMaj3 $ n - 1
+iteratedThresholdFun :: [Threshold] -> IteratedThresholdFun'
+iteratedThresholdFun [] = Pure ()
+iteratedThresholdFun (t : ts) = Free $ thresholdFunReplicate t $ iteratedThresholdFun ts
 
-iteratedMaj5 :: Int -> IteratedThresholdFun'
-iteratedMaj5 0 = Pure ()
-iteratedMaj5 n = Free $ thresholdFunReplicate (thresholdFair 3) $ iteratedMaj5 $ n - 1
-
+-- Reachable excluding constant functions.
+numReachable' :: [Threshold] -> Integer
+numReachable' [] = 1
+numReachable' (t@(Threshold v) : ts) = sum $ do
+  let n = numReachable' ts
+  let vs = squareToList v
+  i <- take (sum vs) naturals
+  let factor = vs & map (toInteger >>> subtract i >>> min 0) & sum & (+ i)
+  return $ factor * chooseMany n i
 
 {-
-The number s_n of nodes reachable from iteratedMaj3 n is given by the following recurrence:
-* s_0 = 3,
-* s_{n+1} = 2 + (s_n + 5) s_n (s_n - 2) / 6.
+Number of Boolean functions reachable from 'iteratedThresholdFun ts' by setting variables.
+That is:
+>>> length $ reachable $ iteratedThresholdFun ts'
+-}
+numReachable :: [Threshold] -> Integer
+numReachable = numReachable' >>> (+ 2)
+
+iteratedMajFun :: [Int] -> IteratedThresholdFun'
+iteratedMajFun = map thresholdMaj >>> iteratedThresholdFun
+
+-- Argument are votes needed at each stage and number of stages.
+iteratedMajFun' :: Int -> Int -> IteratedThresholdFun'
+iteratedMajFun' threshold numStages = replicate numStages threshold & iteratedMajFun
+
+iteratedMaj3 :: Int -> IteratedThresholdFun'
+iteratedMaj3 = iteratedMajFun' 2
+{-
+The number of Boolean functions reachable from iteratedMaj3 is 2 plus s_n where
+* s_0 = 1,
+* s_{n+1} = s_n (s_n + 2) (s_n + 7) / 6.
 For example:
-* s_0 = 3,
-* s_1 = 6
-* s_2 = 46,
-* s_3 = 17206,
-* s_4 = 849110490846.
+* s_0 = 1,
+* s_1 = 4
+* s_2 = 44,
+* s_3 = 17204,
+* s_4 = 849110490844,
+-}
 
-This can be checked for s <= 3 as follows:
-
->>> [0..3] & map (iteratedMaj3 >>> reachable >>> length)
-[3,6,46,17206]
+iteratedMaj5 :: Int -> IteratedThresholdFun'
+iteratedMaj5 = iteratedMajFun' 3
+{-
+The number of Boolean functions reachable from iteratedMaj5 is 2 plus t_n where
+* t_0 = 1,
+* t_{n+1} = t_n (t_n + 2) (t_n + 3) (t_n ^ 2 + 15 t_n + 74) / 120
+For example:
+* t_0 = 1,
+* t_1 = 9,
+* t_2 = 2871,
+* t_3 = 1636845671105073,
+* t_4 = 97916848002123806402045274379974531999764335775612939415896877758995991565.
 -}

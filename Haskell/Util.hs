@@ -10,11 +10,22 @@ import qualified Data.MultiSet as MultiSet
 import qualified Data.Set as Set
 
 
+-- Debugging.
+
 mayTrace _ = id
 --mayTrace = trace
 
 shouldTrace _ = id
 --shouldTrace = trace
+
+
+-- A missing type class.
+
+class (Monoid a) => Group a where
+  invert :: a -> a
+
+
+-- MultiSet instances.
 
 instance (Ord a, Memoizable a) => Memoizable (MultiSet.MultiSet a) where
   memoize f = MultiSet.toAscOccurList >>> memoize (MultiSet.fromAscOccurList >>> f)
@@ -37,8 +48,26 @@ instance Show1 MultiSet.MultiSet where
     >>> (showString "fromOccurList " .)
     >>> showParen (p > 10)
 
-naturals :: [Int]
+
+-- Combinatorics.
+
+naturals :: (Integral i) => [i]
 naturals = iterate (+ 1) 0 
+
+-- Number of order-independent choices of k elements from n.
+choose :: Integer -> Integer -> Integer
+choose n k = if k == 0 then 1 else choose (n - 1) (k - 1) * n `quot` k
+
+-- Number of order-independent repeated choices of k elements from n.
+chooseMany :: Integer -> Integer -> Integer
+chooseMany n k = choose (n + k - 1) k
+
+-- Number of order-independent repeated choices of up to k elements from n.
+chooseManyUpTo :: Integer -> Integer -> Integer
+chooseManyUpTo n = chooseMany (n + 1)
+
+
+-- Working with Bool.
 
 type Square x = (x, x)
 
@@ -57,12 +86,18 @@ lookupBool (a, b) v = if v then a else b
 mapPair :: (a -> b) -> Square a  -> Square b
 mapPair f = lookupBool >>> (f .) >>> tabulateBool
 
+squareToList :: Square x -> [x]
+squareToList (a, b) = [a, b]
+
 boolToInt :: Bool -> Int
 boolToInt False = 0
 boolToInt True = 1
 
 unify :: (Eq a) => a -> a -> a
 unify x y | x == y = x
+
+
+-- Graph reachability.
 
 dfs :: (Ord a, MonadState (Set.Set a) m) => (a -> [a]) -> a -> m ()
 dfs outgoing = h where
@@ -74,6 +109,3 @@ dfs outgoing = h where
 
 dfs' :: (Ord a) => (a -> [a]) -> a -> Set.Set a
 dfs' outgoing start = execState (dfs outgoing start) Set.empty
-
-class (Monoid a) => Group a where
-  invert :: a -> a
