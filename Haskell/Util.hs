@@ -8,7 +8,7 @@ import Data.Function.Memoize (Memoizable(..))
 import Data.Functor.Classes (Eq1(..), Ord1(..), Show1(..), Eq2(..), Ord2(..), Show2(..))
 import qualified Data.MultiSet as MultiSet
 import qualified Data.Set as Set
-
+import Debug.Trace (trace)
 
 -- Debugging.
 
@@ -19,7 +19,11 @@ shouldTrace _ = id
 --shouldTrace = trace
 
 
--- A missing type class.
+-- Monoids.
+
+fromJustMonoid :: Monoid a => Maybe a -> a
+fromJustMonoid (Just x) = x
+fromJustMonoid Nothing = mempty
 
 class (Monoid a) => Group a where
   invert :: a -> a
@@ -93,8 +97,11 @@ boolToInt :: Bool -> Int
 boolToInt False = 0
 boolToInt True = 1
 
-unify :: (Eq a) => a -> a -> a
-unify x y | x == y = x
+boolToMaybe :: Bool -> a -> Maybe a
+boolToMaybe v x = if v then Just x else Nothing
+
+unify :: (Eq a) => (a, a) -> Maybe a
+unify (x, y) = boolToMaybe (x == y) x
 
 
 -- Graph reachability.
