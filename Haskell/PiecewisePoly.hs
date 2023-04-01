@@ -6,7 +6,7 @@
 module PiecewisePoly where
 
 import Control.Applicative (Applicative(..))
-import Control.Arrow ((>>>), (***))
+import Control.Arrow ((>>>))
 import Control.Monad (forM_, guard)
 import Data.Bifunctor (Bifunctor(..), bimap)
 import Data.Function ((&))
@@ -276,7 +276,7 @@ bisectedIntersect (r, (p_0, p_1)) = if
 
 bisectedPW :: (Field a, Ord a) => PiecewisePoly a -> Square (PiecewisePoly a)
 bisectedPW (PWBisect x) = x
-bisectedPW (PWPoly p) = (PWPoly *** PWPoly) $ bisected p
+bisectedPW (PWPoly p) = mapPair PWPoly $ bisected p
 bisectedPW (PWIntersect x) = bisectedIntersect x
 
 evalPW' :: (Field a, Ord a) => ZoomData a -> PiecewisePoly a -> a -> a
@@ -455,7 +455,7 @@ minPWs = foldr1 $ curry minPW
 
 piecewiseBinOp :: (Show a, Field a, Ord a) => Bool -> (Square (Poly a) -> Poly a) -> Square (PiecewisePoly a) -> PiecewisePoly a
 piecewiseBinOp regen op = h mempty where
-  opRegen z = (original *** original) >>> op >>> zoomedGenerate z
+  opRegen z = mapPair original >>> op >>> zoomedGenerate z
   opNotRegen _ = uncurry (liftA2 (,)) >>> fmap op
   op' = if regen then opRegen else opNotRegen
   
