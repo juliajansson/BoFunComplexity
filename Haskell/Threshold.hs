@@ -22,7 +22,7 @@ import BoFun
 import Util
 
 
--- A threshold for a Boolean function.
+-- | A threshold for a Boolean function.
 -- Number of inputs needed for 'True' and 'False' result, respectively.
 -- The sum of these thresholds equals the number of inputs plus one.
 -- Each threshold is non-negative.
@@ -57,12 +57,12 @@ thresholdIsConst (Threshold (nt, nf)) = if
   | nf <= 0 -> Just False
   | otherwise -> Nothing
 
--- A majority threshold.
+-- | A majority threshold.
 thresholdMaj :: Int -> Threshold
 thresholdMaj = duplicate >>> Threshold
 
 
--- A threshold-type Boolean function.
+-- | A threshold-type Boolean function.
 data ThresholdFun f = ThresholdFun {
   threshold :: Threshold,
   -- The subfunctions.
@@ -73,14 +73,17 @@ data ThresholdFun f = ThresholdFun {
 
 -- Necessitated by misdesign of Haskell typeclasses.
 instance Eq1 ThresholdFun where
-  liftEq eq' (ThresholdFun t us) (ThresholdFun t' us') = liftEq2 (==) (liftEq eq') (t, us) (t', us')
+  liftEq eq' (ThresholdFun t us) (ThresholdFun t' us') =
+    liftEq2 (==) (liftEq eq') (t, us) (t', us')
 
 instance Ord1 ThresholdFun where
-  liftCompare compare' (ThresholdFun t us) (ThresholdFun t' us') = liftCompare2 compare (liftCompare compare') (t, us) (t', us')
+  liftCompare compare' (ThresholdFun t us) (ThresholdFun t' us') =
+    liftCompare2 compare (liftCompare compare') (t, us) (t', us')
 
 -- TODO: use record fields.
 instance Show1 ThresholdFun where
-  liftShowsPrec showsPrec' showList' p (ThresholdFun t u) = showsBinaryWith showsPrec (liftShowsPrec showsPrec' showList') "ThresholdFun" p t u
+  liftShowsPrec showsPrec' showList' p (ThresholdFun t u) =
+    showsBinaryWith showsPrec (liftShowsPrec showsPrec' showList') "ThresholdFun" p t u
 
 -- TODO: instance Read1 ThresholdFun
 
@@ -104,10 +107,10 @@ instance (Ord x, Memoizable x) => Memoizable (ThresholdFun x) where
 thresholdFunConst :: Bool -> ThresholdFun f
 thresholdFunConst val = ThresholdFun (thresholdConst val) MultiSet.empty
 
--- Normalizes threshold functions equivalent to a constant function.
+-- | Normalizes threshold functions equivalent to a constant function.
 thresholdFunNormalize :: (Eq f, BoFun f i) => ThresholdFun f -> ThresholdFun f
 thresholdFunNormalize u = case thresholdIsConst (threshold u) of
-  Just val -> ThresholdFun (thresholdConst val) MultiSet.empty
+  Just val -> thresholdFunConst val
   Nothing -> u
 
 -- Reduces constant subfunctions in a threshold function.
@@ -142,12 +145,12 @@ instance (Ord f, BoFun f i) => BoFun (ThresholdFun f) (Int, i) where
     u' = setBit (v, val) u
     t' = t - thresholdConst val
 
--- A thresholding function with copies of a single subfunction.
+-- | A thresholding function with copies of a single subfunction.
 thresholdFunReplicate :: (Ord f) => Threshold -> f -> ThresholdFun f
 thresholdFunReplicate t u = ThresholdFun t $ MultiSet.fromOccurList [(u, thresholdNumInputs t)]
 
 
--- Boolean functions built from iterated thresholding.
+-- | Boolean functions built from iterated thresholding.
 type IteratedThresholdFun f = Free ThresholdFun f
 
 -- Could special case the above type to avoid pulling in the Kmettiverse.
@@ -189,6 +192,7 @@ instance BoFun IteratedThresholdFun' [Int] where
 
 -- Example Boolean functions.
 
+-- | Majority on five bits
 maj5 :: ThresholdFun (Maybe Bool)
 maj5 = thresholdFunReplicate (thresholdMaj 3) Nothing
 
@@ -196,7 +200,7 @@ iteratedThresholdFun :: [Threshold] -> IteratedThresholdFun'
 iteratedThresholdFun [] = Pure ()
 iteratedThresholdFun (t : ts) = Free $ thresholdFunReplicate t $ iteratedThresholdFun ts
 
--- Reachable excluding constant functions.
+-- | Reachable excluding constant functions.
 numReachable' :: [Threshold] -> Integer
 numReachable' [] = 1
 numReachable' (t@(Threshold v) : ts) = sum $ do

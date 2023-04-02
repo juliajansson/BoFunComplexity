@@ -94,7 +94,7 @@ descartesUnitInterval countOne = reverseCoeff >>> translateInput one >>> descart
 
 -- Decartes upper bound for zeroes.
 -- The argument specifies the half-open interval:
--- * True: [0, 1)
+-- * True:  [0, 1)
 -- * False: (0, 1]
 descartesUnitInterval' :: (Ord a, Ring a) => Bool -> Poly a -> Maybe Int
 descartesUnitInterval' basepoint =
@@ -114,7 +114,7 @@ squarefreeRoot' :: (Ord a, Ring a) => Bool -> Poly a -> Bool
 squarefreeRoot' basepoint = descartesUnitInterval' basepoint >>> fromJust >>> odd
 
 
--- Affine polynomials.
+-- | Affine polynomials.
 data AffinePoly a = AffinePoly
   a  -- scale factor
   a  -- offset
