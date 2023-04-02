@@ -1,14 +1,14 @@
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE DeriveFunctor #-}
 module PolynomialExtra where
 
 import Control.Arrow ((>>>), (***), second)
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, fromJust)
+import Data.Monoid (Sum(..))
 import Data.Ratio (Ratio(..), (%), numerator, denominator)
 import Prelude hiding ((+), (-), (*), negate, recip, quot)
 import qualified Prelude ((*))
 
-import DSLsofMath.Algebra
+import DSLsofMath.Algebra hiding (sum)
 import DSLsofMath.PSDS
 
 import Util
@@ -35,8 +35,7 @@ evalZero (P cs) = case cs of
 lowestNonzero :: (Eq a, Ring a) => Poly a -> a
 lowestNonzero (P cs) = h cs where
   h [] = zero
-  h (a : as) | a == zero = h as
-             | otherwise = a
+  h (a : as) = if a == zero then h as else a
 
 
 -- Some transformations.
@@ -62,44 +61,64 @@ flipUnitIntervalPoly = (`comP` P [one, negate one])
 
 -- Descartes' rule of sign.
 
--- Sign changes of a non-zero polynomial, including counts of initial zero coefficients
-signChanges :: (Ord a, Additive a) => Poly a -> Int
-signChanges = unP >>> map (`compare` zero) >>> signChanges' where
+signChanges' :: Ordering -> [Ordering] -> Int
+signChanges' _ [] = 0
+signChanges' a (c:cs) = r + signChanges' a' cs where
+  (a', r) = if c `elem` [EQ, a]
+    then (a, 0)
+    else (c, 1)
 
-  signChanges' :: [Ordering] -> Int
-  signChanges' [] = 0
-  signChanges' (c:cs) | c == EQ = 1 + signChanges' cs
-                      | otherwise = signChanges'' c cs
+-- Number of positive roots.
+-- Optionally include zero roots.
+-- Returns Nothing if all zero.
+signChanges :: Bool -> [Ordering] -> Maybe Int
+signChanges countZero cs = case cs' of
+  [] -> Nothing
+  nonZero : cs'' -> Just $ getSum $ mconcat
+    [ fromJustMonoid $ boolToMaybe countZero $ Sum $ length zeroes
+    , Sum $ signChanges' nonZero cs''
+    ]
+  where
+  (zeroes, cs') = span (== EQ) cs
 
-  signChanges'' :: Ordering -> [Ordering] -> Int
-  signChanges'' _ [] = 0
-  signChanges'' a (c:cs) | c `elem` [EQ, a] = signChanges'' a cs
-                         | otherwise = 1 + signChanges'' c cs
+-- Decartes' upper bound for positive roots.
+-- Optionally count zero roots.
+-- Returns Nothing if all zero.
+descartesPos :: (Ord a, Ring a) => Bool -> Poly a -> Maybe Int
+descartesPos countZero = unP >>> map (`compare` zero) >>> signChanges countZero
+
+-- Decartes upper bound for roots in (0, 1).
+-- Optionally count roots at 1.
+descartesUnitInterval :: (Ord a, Ring a) => Bool -> Poly a -> Maybe Int
+descartesUnitInterval countOne = reverseCoeff >>> translateInput one >>> descartesPos countOne
 
 -- Decartes upper bound for zeroes.
--- The half-open interval is specified by basepoint.
+-- The argument specifies the half-open interval:
 -- * True: [0, 1)
 -- * False: (0, 1]
--- Returns 0 on zero.
-descartes :: (Ord a, Ring a) => Bool -> Poly a -> Int
-descartes basepoint =
+descartesUnitInterval' :: (Ord a, Ring a) => Bool -> Poly a -> Maybe Int
+descartesUnitInterval' basepoint =
       (if basepoint then flipUnitIntervalPoly else id)
   >>> reverseCoeff
   >>> translateInput one
-  >>> normalPoly
-  >>> signChanges
+  >>> descartesUnitInterval True
 
--- Checks if the given square-free polynomial has a root in [0, 1).
+-- Checks if the given square-free polynomial has a root in (0, 1).
 -- Condition: the polynomial has at most one root in this interval.
-squarefreeRoot :: (Ord a, Ring a) => Bool -> Poly a -> Bool
-squarefreeRoot basepoint = descartes basepoint >>> odd
+squarefreeRoot :: (Ord a, Ring a) => Poly a -> Bool
+squarefreeRoot = descartesUnitInterval False >>> fromJust >>> odd
+
+-- Checks if the given square-free polynomial has a root in [0, 1) (True) or (0, 1] (False).
+-- Condition: the polynomial has at most one root in this interval.
+squarefreeRoot' :: (Ord a, Ring a) => Bool -> Poly a -> Bool
+squarefreeRoot' basepoint = descartesUnitInterval' basepoint >>> fromJust >>> odd
 
 
 -- Affine polynomials.
 data AffinePoly a = AffinePoly
   a  -- scale factor
   a  -- offset
-  deriving (Eq, Ord, Show, Functor)
+  deriving (Eq, Ord, Show, Read, Functor)
 
 affinePoly :: AffinePoly a -> Poly a
 affinePoly (AffinePoly scale offset) = P [offset, scale]
@@ -164,9 +183,7 @@ radical' :: (Show a, Field a, Eq a) => Poly a -> Poly a
 radical' = yun >>> foldr (*) one
 
 radical :: (Show a, Field a, Eq a) => Poly a -> Poly a
-radical p = if
-  | p == zero -> zero
-  | otherwise -> radical' p
+radical p = if p == zero then zero else radical' p
 
 {- Unfinished: rational GCD with integral coefficients.
 rationalGenerator :: (Euclidean a) => (Poly a, Poly a) -> (Poly a, (Poly a, Poly a))
@@ -217,7 +234,7 @@ similar' = (unP *** unP) >>> zipZero >>> equalRatio >>> isJust
 
 -- Determine if two polynomials are the same over the rationals up to units.
 similar :: (Eq a, Ring a) => (Poly a, Poly a) -> Bool
-similar (p, q) = p == q || similar' (p, q) where
+similar (p, q) = p == q || similar' (p, q)
 
 viewZero :: (Additive a) => [a] -> (a, [a])
 viewZero [] = (zero, [])

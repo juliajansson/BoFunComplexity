@@ -1,15 +1,16 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE RankNTypes #-}
 module PiecewisePoly where
 
 import Control.Applicative (Applicative(..))
-import Control.Arrow ((>>>), (***))
+import Control.Arrow ((>>>))
 import Control.Monad (forM_, guard)
 import Data.Bifunctor (Bifunctor(..), bimap)
 import Data.Function ((&))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, fromJust, isJust)
 import Data.Ratio ((%), numerator)
 import qualified Data.Set as S (Set, fromList, size)
 import Debug.Trace (trace, traceShow)
@@ -30,7 +31,7 @@ import PolynomialExtra
 data ZoomData a = ZoomData {
   zoomLevel :: Int,               -- TODO: decide if we want that here
   zoomAffinePoly :: AffinePoly a  -- affine transformation
-} deriving (Eq, Ord, Show, Functor)
+} deriving (Eq, Ord, Show, Read, Functor)
 
 instance (Ring a) => Semigroup (ZoomData a) where
   ZoomData l0 a0 <> ZoomData l1 a1 = ZoomData (l0 + l1) (a0 <> a1)
@@ -79,13 +80,13 @@ data Zoomed a x = Zoomed
   { original :: x           -- the data at original scale
   , zoomData :: ZoomData a  -- the zoom
   , zoomed :: x             -- the zoomed data
-  } deriving (Eq, Ord, Show)
+  } deriving (Show, Read)
 
 instance Functor (Zoomed a) where
   fmap f (Zoomed original z zoomed) = Zoomed (f original) z (f zoomed)
 
 instance Bifunctor Zoomed where
-  bimap f g (Zoomed original z zoomed) = Zoomed (g original) (fmap f z) (g zoomed)
+  bimap f g (Zoomed original z zoomed) = Zoomed (g original) (f <$> z) (g zoomed)
 
 -- Really this is an instance of Applicative for each fixed zoomData attribute.
 instance Applicative (Zoomed a) where
@@ -98,6 +99,9 @@ zoomedTrivial v = Zoomed v mempty v
 
 zoomedGenerate :: (Zoomable a x) => ZoomData a -> x -> Zoomed a x
 zoomedGenerate z v = Zoomed v z $ zoom z v
+
+zoomedRegenerate :: (Zoomable a x) => ZoomData a -> Zoomed a x -> Zoomed a x
+zoomedRegenerate z = original >>> zoomedGenerate z
 
 instance (Zoomable a x) => Zoomable a (Zoomed a x) where
   zoom z (Zoomed original z' zoomed) = Zoomed original (zoom z z') (zoom z zoomed)
@@ -122,7 +126,7 @@ instance (ZoomableAddGroup x a) => AddGroup (Zoomed x a) where
 data ZoomedApprox a x = ZoomedApprox {
   approxValue :: Zoomed a x,     -- current value
   approxInfo  :: Maybe (Int, x)  -- if current value is approximation: level bound below it is to be used and actual value
-} deriving (Show)
+} deriving (Show, Read)
 
 viewApprox :: ZoomedApprox a x -> Zoomed a x
 viewApprox = approxValue
@@ -140,13 +144,12 @@ normalizeApprox approx@(ZoomedApprox value m) = h where
     _ -> approx
 
 instance Functor (ZoomedApprox a) where
-  fmap f (ZoomedApprox value m) = ZoomedApprox (fmap f value) (fmap (fmap f) m)
+  fmap f (ZoomedApprox value m) = ZoomedApprox (f <$> value) (fmap f <$> m)
 
 -- There are two evident Zoomable instances.
 -- The functorial one that doesn't normalize and the one given here.
 instance (Show a, Show x, Zoomable a x) => Zoomable a (ZoomedApprox a x) where
-  zoom z (ZoomedApprox value m) = mayTrace ("zoomApprox " ++ show z ++ " with result " ++ show r) r where
-    r = normalizeApprox $ ZoomedApprox (zoom z value) m
+  zoom z (ZoomedApprox value m) = normalizeApprox $ ZoomedApprox (zoom z value) m
 
 
 type ZoomedPoly a = Zoomed a (Poly a)
@@ -173,24 +176,31 @@ bisected :: (Field a, Zoomable a x) => x -> (x, x)
 bisected = tabulateBool . flip bisected'
 
 
-type Intersect a = (ZoomedPoly a, (ZoomedPoly a, ZoomedPoly a))
+-- A tuple (r, (p_0, p_1)) denotes a two-piece polynomial in [0, 1] (zoomed).
+-- The switch from the left piece p_0 to the right piece p_1 is given by the unique root of r in (0, 1).
+type Intersect a = (ZoomedPoly a, Square (ZoomedPoly a))
+
+-- Checks if the separating polynomial has a unique root in the expected.
+checkIntersect :: (Show a, Ring a, Ord a) => Intersect a -> Maybe ()
+checkIntersect (r, (p_0, p_1)) = case comparePoly (zoomed p_0, zoomed p_1) (zoomed r) of
+  Just (Right _) -> Just ()
+  _ -> Nothing
+
+-- Regenerate an intersect at a specified zoom level.
+-- Returns Nothing if the resulting intersect is invalid.
+intersectRegenerate :: (Show a, Ring a, Ord a) => ZoomData a -> Intersect a -> Maybe (Intersect a)
+intersectRegenerate z (r, p) = intersect <$ checkIntersect intersect where
+  intersect = (zoomedRegenerate z r, tabulateBool $ lookupBool p >>> zoomedRegenerate z)
 
 {-
 A piecewise polynomial at some zoom level.
 The domain of definition is rescaled to [0, 1).
 
-Invariants:
-* PWBisect right composes current zoom according to 'bisected'.
-* In the linearization, neighbouring polynomials are equal.
+PWBisect right composes current zoom according to 'bisected'.
 
-Intersections at 0 are captured by PWIntersect.
-
-TODO:
-Investigate if we should move back to a symmetric version ([0, 1]).
-There, intersections at 0 and 1 are ignored.
-And an intersection at 1/2 is captures by different polynomials in each half.
-* May avoid GCD operations for common multiple roots.
-* Allows us to divide out zeros at 0.
+Switches between pieces are captured:
+* at dyadic numbers by PWBisect,
+* at other algebaic numbers by PWIntersect.
 -}
 data PiecewisePoly a =
     PWPoly (ZoomedPoly a)
@@ -221,34 +231,44 @@ isPoly _ = False
 piecewiseFromPoly :: (Ring a) => Poly a -> PiecewisePoly a
 piecewiseFromPoly = zoomedTrivial >>> PWPoly
 
--- TODO: Find better return type.
-linearizePW' :: (Field a) => ZoomData a -> PiecewisePoly a -> [Either (Poly a) (Poly a, Square a)]
+data Separation' a a' = Dyadic a | Algebraic (Poly a', (a, a))
+  deriving (Eq, Ord)
+
+type Separation a = Separation' a a
+
+linearizePW' :: (Eq a, Field a) => ZoomData a -> PiecewisePoly a -> [Either (Poly a) (Separation a)]
 linearizePW' z p = case p of
-  PWPoly p -> [Left $ original p]
-  PWIntersect (r, (p_0, p_1)) ->
-    [ Left $ original p_0
-    , Right (original r, (zoomEval z zero, zoomEval z one))
-    , Left $ original p_1
-    ]
-  PWBisect p -> [True, False]
-    & fmap (\i -> linearizePW' (bisected' i z) (lookupBool p i))
-    & mconcat
+  PWBisect p -> onBisect p
+  _ -> onOther
+  where
+  onBisect p = h $ case unify (p_0, p_1) of
+    Just p -> [Left p]
+    Nothing -> [Left p_0, Right $ Dyadic $ fromJust $ unify (s_0, s_1), Left p_1]
+    where
+    xs@(x_0, x_1) = tabulateBool $ \i -> linearizePW' (bisected' i z) (lookupBool p i)
+    Right (Dyadic s_0) : Left p_0 : y_0 = reverse x_0
+    Right (Dyadic s_1) : Left p_1 : y_1 = x_1
+    h u = reverse y_0 ++ u ++ y_1
 
-normalizePWLinear :: (Eq a) => [Either a b] -> [Either a b]
-normalizePWLinear (Left p : xs) = h p xs where
-  h p [] = [Left p]
-  h p (Left p' : xs) | p == p' = h p xs
-  h p (Right q : Left p' : xs) = Left p : Right q : h p' xs
+  onOther = h $ case p of
+    PWPoly p -> [Left $ original p]
+    PWIntersect (r, p) -> let
+      (p_0, p_1) = mapPair original p in
+      [Left p_0, Right $ Algebraic (original r, b), Left p_1]
+    where
+    b = tabulateBool $ lookupBool (zero, one) >>> zoomEval z
+    (b_0', b_1') = tabulateBool $ lookupBool b >>> Dyadic >>> Right
+    h u = [b_0'] ++ u ++ [b_1']
 
-linearizePW :: (Field a, Eq a) => PiecewisePoly a -> [Either (Poly a) (Poly a, Square a)]
-linearizePW = linearizePW' mempty >>> normalizePWLinear
+-- TODO: Find better return type.
+linearizePW :: (Field a, Eq a) => PiecewisePoly a -> [Either (Poly a) (Separation a)]
+linearizePW = linearizePW' mempty
 
--- Old special case:
---  | evalZero (zoomed r_r) == zero -> (PWPoly p_0_l, PWPoly p_1_r)
 bisectedIntersect :: (Field a, Ord a) => Intersect a -> Square (PiecewisePoly a)
-bisectedIntersect (r, (p_0, p_1)) = if squarefreeRoot True (zoomed r_l)
-  then (PWIntersect (r_l, (p_0_l, p_1_l)), PWPoly p_1_r)
-  else (PWPoly p_0_l, PWIntersect (r_r, (p_0_r, p_1_r)))
+bisectedIntersect (r, (p_0, p_1)) = if
+  | squarefreeRoot $ zoomed r_l -> (PWIntersect (r_l, (p_0_l, p_1_l)), PWPoly p_1_r)
+  | squarefreeRoot $ zoomed r_r -> (PWPoly p_0_l, PWIntersect (r_r, (p_0_r, p_1_r)))
+  | otherwise -> (PWPoly p_0_l, PWPoly p_1_r)
   where
   (r_l, r_r) = bisected r
   (p_0_l, p_0_r) = bisected p_0
@@ -256,14 +276,14 @@ bisectedIntersect (r, (p_0, p_1)) = if squarefreeRoot True (zoomed r_l)
 
 bisectedPW :: (Field a, Ord a) => PiecewisePoly a -> Square (PiecewisePoly a)
 bisectedPW (PWBisect x) = x
-bisectedPW (PWPoly p) = (PWPoly *** PWPoly) $ bisected p
+bisectedPW (PWPoly p) = mapPair PWPoly $ bisected p
 bisectedPW (PWIntersect x) = bisectedIntersect x
 
 evalPW' :: (Field a, Ord a) => ZoomData a -> PiecewisePoly a -> a -> a
 evalPW' z p x = case p of
   PWPoly p -> evalP (original p) x
   PWIntersect (r, ps) -> if evalP (original r) x == zero
-    then uncurry unify $ tabulateBool $ lookupBool ps >>> ev
+    then fromJust $ unify $ tabulateBool $ lookupBool ps >>> ev
     else deepen
   PWBisect p -> deepen
   where
@@ -275,19 +295,20 @@ evalPW' z p x = case p of
 evalPW :: (Field a, Ord a) => PiecewisePoly a -> a -> a
 evalPW = evalPW' mempty
 
-
 normalizedBisect :: (Show a, Ring a, Ord a) => ZoomData a -> Square (PiecewisePoly a) -> PiecewisePoly a
-normalizedBisect z p = if
-  | (PWPoly p_0, PWPoly p_1) <- p, original p_0 == original p_1 -> PWPoly (g p_0)
-  | (PWPoly p_0, PWIntersect (r, (p_10, p_11))) <- p, original p_0 == original p_10, Just _ <- comparePoly (f p_10) (f p_11) (f r) -> PWIntersect (g r, (g p_10, g p_11))
-  | (PWIntersect (r, (p_00, p_01)), PWPoly p_1) <- p, original p_1 == original p_01, Just _ <- comparePoly (f p_00) (f p_01) (f r) -> PWIntersect (g r, (g p_00, g p_01))
-  | otherwise -> PWBisect p
+normalizedBisect z p = case p of
+  (PWPoly p_0, PWPoly p_1) -> h (p_0, p_1) $ return $ PWPoly $ zoomedRegenerate z p_0
+  (PWPoly p_0, PWIntersect p_1@(_, (p_10, _))) -> h (p_0, p_10) $ PWIntersect <$> intersectRegenerate z p_1
+  (PWIntersect p_0@(_, (_, p_01)), PWPoly p_1) -> h (p_1, p_01) $ PWIntersect <$> intersectRegenerate z p_0
+  _ -> def
   where
-  f = original >>> zoom z
-  g = original >>> zoomedGenerate z
+  def = PWBisect p
+  h p f = fromMaybe def $ do
+    unify $ mapPair original p
+    f
 
 normalizedBisect' :: (Show a, Field a, Ord a) => ZoomData a -> (Bool -> PiecewisePoly a) -> PiecewisePoly a
-normalizedBisect' z f = normalizedBisect z (f True, f False)
+normalizedBisect' z = tabulateBool >>> normalizedBisect z
 
 normalizedIntersect :: (Show a, Ring a, Eq a) => Intersect a -> PiecewisePoly a
 normalizedIntersect p@(r, (p_0, p_1)) = res where
@@ -297,62 +318,35 @@ normalizedIntersect p@(r, (p_0, p_1)) = res where
   res' | original p_0 - original p_1 `elem` [original r, negate $ original r] = res
        | otherwise = error $ "THE STRANGEST THING: " ++ show (original p_0) ++ ", " ++ show (original p_1) ++ ", " ++ show (original r)
 
-{- Old version:
 {-
-Compare two polynomials in [0, 1).
+Compare two polynomials in (0, 1).
 Precondition: p == q or diffRadical generates the same radical as p - q.
-* Nothing: p /= q and one of of: more than one intersection, diffRadical is not the radical of p - q.
-* Just (Left v): p and q are comparable; if v, then p <= q, else p >= q.
-* Just (Right v):
-  - p and q intersect exactly once, at the position given by the unique root of diffRadical in [0, 1),
-  - if v, then p < q on the left and p > q on the right, otherwise dually.
--}
-comparePoly :: (Ring a, Ord a) => Poly a -> Poly a -> Poly a -> Maybe (Either Bool Bool)
-comparePoly p q diffRadical = if
-  | d == 0 -> Just $ Left smaller_0
-  | d == 1 -> Just $ if
-    | evalZero diff == zero -> Left smaller_0
-    | smaller_0 == smaller_1 -> Left smaller_0
-    | otherwise -> Right smaller_0
-  | otherwise -> Nothing
-  where
-  d = descartes True diffRadical
-  diff = p - q
-  smaller_0 = lowestNonzero diff <= zero
-  smaller_1 = lowestNonzero (flipPoly diff) <= zero
--}
-
-{-
-Compare two polynomials in [0, 1).
-Precondition: p == q or diffRadical generates the same radical as p - q.
-* Nothing: p /= q and one of of: more than one intersection, diffRadical is not the radical of p - q.
+* Nothing: p /= q and one of: more than one intersection, diffRadical is not the radical of p - q.
 * Just (Left v): p and q are comparable; if v, then p <= q, else p >= q.
 * Just (Right (v_0, v_1)):
-  - p and q intersect exactly once in [0, 1), at the position given by the unique root of diffRadical in [0, 1),
+  - p and q intersect exactly once in (0, 1), at the position given by the unique root of diffRadical in that interval,
   - v_0 /= v_1,
   - on the left/right of the intersection: if v_{0/1} then p < q else p > q.
 -}
-comparePoly :: (Show a, Ring a, Ord a) => Poly a -> Poly a -> Poly a -> Maybe (Either Bool (Square Bool))
-comparePoly p q diffRadical = mayTrace ("comparing " ++ show p ++ " and " ++ show q ++ " using " ++ show diffRadical ++ " and " ++ show diff ++ ": " ++ show r) r
+comparePoly :: (Show a, Ring a, Ord a) => (Poly a, Poly a) -> Poly a -> Maybe (Either Bool (Square Bool))
+comparePoly (p, q) diffRadical = case descartesUnitInterval True diffRadical of
+  Nothing -> Just $ Left True
+  Just 0 -> Just $ Left smaller_0
+  Just 1 -> Just $ if smaller_0 == smaller_1
+    then Left smaller_0
+    else Right (smaller_0, smaller_1)
+  _ -> Nothing
   where
-  d = descartes True diffRadical
   diff = p - q
-  diff_neg_0 = scaleInput (negate one) diff
-  diff_neg_1 = translateInput (negate one) diff_neg_0
-  smaller_0 = lowestNonzero diff_neg_0 <= zero
-  smaller_1 = lowestNonzero diff_neg_1 <= zero
-  r = if
-    | d == 0 -> Just $ Left $ evalZero diff <= zero
-    | d == 1 -> Just $ if smaller_0 == smaller_1
-      then Left smaller_0
-      else Right (smaller_0, smaller_1)
-    | otherwise -> Nothing
+  check p = lowestNonzero p <= zero
+  smaller_0 = check diff
+  smaller_1 = check $ flipUnitIntervalPoly diff
 
-comparePoly' :: (Show a, Ring a, Ord a) => ZoomedPoly a -> ZoomedPoly a -> ZoomedApproxPoly a -> Maybe (Either Bool (Square Bool))
-comparePoly' p q diffRadical = comparePoly (zoomed p) (zoomed q) (zoomed $ viewApprox diffRadical)
+comparePoly' :: (Show a, Ring a, Ord a) => (ZoomedPoly a, ZoomedPoly a) -> ZoomedApproxPoly a -> Maybe (Either Bool (Square Bool))
+comparePoly' ps diffRadical = comparePoly (mapPair zoomed ps) (zoomed $ viewApprox diffRadical)
 
 minP :: (Show a, Field a, Ord a) => ZoomData a -> ZoomedPoly a -> ZoomedPoly a -> ZoomedApproxPoly a -> PiecewisePoly a
-minP z p q pq = mayTrace ("minP: " ++ show z ++ "\n* p: " ++ show p ++ "\n* q: " ++ show q ++ "\n* pq: " ++ show pq) $ case comparePoly' p q pq of
+minP z p q pq = case comparePoly' (p, q) pq of
   Nothing -> deepen
   Just (Left v) -> PWPoly $ if v then p else q
   Just (Right vs) -> normalizedIntersect (viewApprox pq, tabulateBool $ \i -> if lookupBool vs i then p else q)
@@ -367,13 +361,12 @@ minP' z p q pq' = minP z p q pq where
   pq = flip fromMaybe pq' $ radicalApprox $ p - q
 
 minPI :: (Show a, Field a, Ord a) => ZoomData a -> ZoomedPoly a -> Intersect a -> Square (ZoomedApproxPoly a) -> ZoomedApproxPoly a -> PiecewisePoly a
-minPI z p q@(s, qs@(q_0, q_1)) pq@(pq_0, pq_1) common = mayTrace ("minPI:\n* z: " ++ show z ++ "\n* p: " ++ show p ++ "\n* q_0: " ++ show q_0 ++ "\n* q_1: " ++ show q_1 ++ "\n* s: " ++ show s ++ "\n* pq_0: " ++ show pq_0 ++ "\n* pq_1: " ++ show pq_1 ++ "\n* common: " ++ show common) res where
-  res = case comparePoly' p q_0 pq_0 of
-    Nothing -> mayTrace "Nothing on left" deepen
+minPI z p q@(s, qs@(q_0, q_1)) pq@(pq_0, pq_1) common = case comparePoly' (p, q_0) pq_0 of
+    Nothing -> deepen
     Just (Left True) -> minP z p q_1 pq_1  -- TODO: could continue with a specialized version of minPI.
     Just (Left False) -> PWIntersect q
-    Just (Right (v_0, _)) -> case comparePoly' p q_1 pq_1 of
-      Nothing -> mayTrace "Nothing on right" deepen
+    Just (Right (v_0, _)) -> case comparePoly' (p, q_1) pq_1 of
+      Nothing -> deepen
       Just (Left True) -> minP z p q_0 pq_0  -- TODO: could continue with a specialized version of minPI.
       Just (Left False) -> PWIntersect q
       Just (Right (_, v_1)) ->
@@ -383,7 +376,7 @@ minPI z p q@(s, qs@(q_0, q_1)) pq@(pq_0, pq_1) common = mayTrace ("minPI:\n* z: 
         If the are the same, we have a direct result using v_0 and v_1.
         -}
         if degree (zoomed $ viewApprox common) == 0
-        then mayTrace "exactly one intersection each, but no common" deepen
+        then deepen
         -- TODO: regenerate intersection polynomial if p is involved (for reproducibility).
         else normalizedIntersect (s, tabulateBool $ \i -> if lookupBool (v_0, v_1) i then p else lookupBool qs i)
     where
@@ -396,30 +389,16 @@ minPI z p q@(s, qs@(q_0, q_1)) pq@(pq_0, pq_1) common = mayTrace ("minPI:\n* z: 
       where
       qs = bisectedIntersect q
 
-  -- Tracing stuff.
-  c = approxTrueOrig common
-  a0 = approxTrueOrig pq_0
-  a1 = approxTrueOrig pq_1
-  d = radical $ gcdP a0 a1
-  e = radical $ gcdP (radical $ original p - original q_0) (radical $ original p - original q_1)
-  res' | not $ approxTrueOrig pq_0 == radical (original p - original q_0) = error $ "minPI: mismatch in pq_0 " ++ show (approxTrueOrig pq_0) ++ " vs. " ++ show (radical (original p - original q_0))
-       | not $ approxTrueOrig pq_1 == radical (original p - original q_1) = error $ "minPI: mismatch in pq_1 " ++ show (approxTrueOrig pq_1) ++ " vs. " ++ show (radical (original p - original q_1))
-       | not $ similar (c, d) = error $ "minPI: common mismatch " ++ show c ++ " vs. " ++ show d ++ " vs. " ++ show e
-       -- | p - q_0 `elem` [viewApprox pq_0, negate $ viewApprox pq_0] && p - q_1 `elem` [viewApprox pq_1, negate $ viewApprox pq_1] = res
-       | otherwise = res
-
 minPI' :: (Show a, Field a, Ord a) => ZoomData a -> ZoomedPoly a -> Intersect a -> Square (Maybe (ZoomedApproxPoly a)) -> Maybe (ZoomedApproxPoly a) -> PiecewisePoly a
-minPI' z p q@(_, qs) pq' common' = mayTrace ("minPI': " ++ show pq' ++ ", " ++ show common') $ minPI z p q pq common where
+minPI' z p q@(_, qs) pq' common' = minPI z p q pq common where
   pq = tabulateBool $ \i -> flip fromMaybe (lookupBool pq' i) $ radicalApprox $ p - lookupBool qs i
   common = flip fromMaybe common' $ radicalGCDApprox $ fmap (\i -> p - lookupBool qs i) [True, False]  -- TODO: reuse radical calculations from above? Probably not worth it.
 
 minII :: (Show a, Field a, Ord a) => ZoomData a -> Intersect a -> Intersect a -> Square (ZoomedApproxPoly a) -> ZoomedApproxPoly a -> PiecewisePoly a
-minII z p@(r, ps@(p_0, p_1)) q@(s, qs@(q_0, q_1)) pq@(pq_0, pq_1) common = mayTrace ("minII:\n* z: " ++ show z ++ "\n* p_0: " ++ show p_0 ++ "\n* p_1: " ++ show p_1 ++ "\n* r: " ++ show r ++ "\n* q_0: " ++ show q_0 ++ "\n* q_1: " ++ show q_1 ++ "\n* s: " ++ show s ++ "\n* pq_0: " ++ show pq_0 ++ "\n* pq_1: " ++ show pq_1 ++ "\n* common: " ++ show common) res
-  where
-  res = case comparePoly' p_0 q_0 pq_0 of
+minII z p@(r, ps@(p_0, p_1)) q@(s, qs@(q_0, q_1)) pq@(pq_0, pq_1) common = case comparePoly' (p_0, q_0) pq_0 of
     Nothing -> deepen
     Just (Left v) -> minPI' z (if v then q_1 else p_1) (if v then p else q) (Nothing, Just pq_1) Nothing  -- TODO: could continue with a specialized version of minII.
-    Just (Right (v_0, _)) -> case comparePoly' p_1 q_1 pq_1 of
+    Just (Right (v_0, _)) -> case comparePoly' (p_1, q_1) pq_1 of
       Nothing -> deepen
       Just (Left v) -> minPI' z (if v then q_0 else p_0) (if v then p else q) (Just pq_0, Nothing) Nothing  -- TODO: could continue with a specialized version of minII.
       Just (Right (_, v_1)) ->
@@ -445,18 +424,6 @@ minII z p@(r, ps@(p_0, p_1)) q@(s, qs@(q_0, q_1)) pq@(pq_0, pq_1) common = mayTr
       where
       ps = bisectedIntersect p
       qs = bisectedIntersect q
-
-  -- Tracing stuff.
-  c = approxTrueOrig common
-  a0 = approxTrueOrig pq_0
-  a1 = approxTrueOrig pq_1
-  d = radical $ gcdP a0 a1
-  e = radical $ gcdP (radical $ original p_0 - original q_0) (radical $ original p_1 - original q_1)
-  res' | not $ approxTrueOrig pq_0 == radical (original p_0 - original q_0) = error $ "minII: mismatch in pq_0 " ++ show (approxTrueOrig pq_0) ++ " vs. " ++ show (radical (original p_0 - original q_0))
-       | not $ approxTrueOrig pq_1 == radical (original p_1 - original q_1) = error $ "minII: mismatch in pq_1 " ++ show (approxTrueOrig pq_1) ++ " vs. " ++ show (radical (original p_1 - original q_1))
-       | not $ similar (c, d) = error $ "minII: common mismatch " ++ show c ++ " vs. " ++ show d ++ " vs. " ++ show e
-       -- | p_0 - q_0 `elem` [viewApprox pq_0, negate $ viewApprox pq_0] && p_1 - q_1 `elem` [viewApprox pq_1, negate $ viewApprox pq_1] = res
-       | otherwise = res
   
 minII' :: (Show a, Field a, Ord a) => ZoomData a -> Intersect a -> Intersect a -> Square (Maybe (ZoomedApproxPoly a)) -> Maybe (ZoomedApproxPoly a) -> PiecewisePoly a
 minII' z p@(_, ps) q@(_, qs) pq' common' = minII z p q pq common where
@@ -480,19 +447,15 @@ minPW' z (u, v) = case (u, v) of
 -- But we could also make it work in general.
 -- Then the construction becomes more generic, closer to piecewiseBinOp.
 -- TODO: Measure impact.
-minPW :: Square (PiecewisePoly Rational) -> PiecewisePoly Rational
-minPW (p, q) = shouldTrace ("minPW\n" ++ showPW p ++ showPW q) $ shouldTrace ("minPW result:\n" ++ showPW r) r where
-  r = minPW' mempty (p, q)
-  r' = case testMinPW 128 [p, q] r of
-    Just () -> r
-    Nothing -> mayTrace ("minPW broken here:\n" ++ showPW p ++ showPW q) $ error ":("
+minPW :: (Show a, Field a, Ord a) => Square (PiecewisePoly a) -> PiecewisePoly a
+minPW = minPW' mempty
 
---minPWs :: (Show a, Field a, Ord a) => [PiecewisePoly a] -> PiecewisePoly a
+minPWs :: (Show a, Field a, Ord a) => [PiecewisePoly a] -> PiecewisePoly a
 minPWs = foldr1 $ curry minPW
 
 piecewiseBinOp :: (Show a, Field a, Ord a) => Bool -> (Square (Poly a) -> Poly a) -> Square (PiecewisePoly a) -> PiecewisePoly a
 piecewiseBinOp regen op = h mempty where
-  opRegen z = (original *** original) >>> op >>> zoomedGenerate z
+  opRegen z = mapPair original >>> op >>> zoomedGenerate z
   opNotRegen _ = uncurry (liftA2 (,)) >>> fmap op
   op' = if regen then opRegen else opNotRegen
   
@@ -520,19 +483,9 @@ instance (Show a, Ord a, Field a) => Additive (PiecewisePoly a) where
 instance (Show a, Ord a, Field a) => AddGroup (PiecewisePoly a) where
   negate = fmap negate
 
--- Needed because our piecewise polynomials keep track of what's happening left of an intersection at zero.
--- Multiplying with mempty (the identity) makes it so that the left piece becomes larger than the right piece on the left.
-fixZero :: (Show a, Field a, Ord a) => PiecewisePoly a -> PiecewisePoly a
-fixZero p = case p of
-  PWPoly p -> PWPoly p
-  PWIntersect (r, (p_0, p_1)) -> if evalP (zoomed r) zero == zero
-    then PWPoly p_1
-    else PWIntersect (r, (p_0, p_1))
-  PWBisect (p_0, p_1) -> PWBisect (fixZero p_0, p_1)
-
 instance (Show a, Ord a, Field a) => Multiplicative (PiecewisePoly a) where
   one = piecewiseFromPoly one
-  (*) = curry $ (fixZero .) $ piecewiseBinOp True $ uncurry (*)
+  (*) = curry $ piecewiseBinOp True $ uncurry (*)
 
 instance (Show a, Field a, Ord a) => Semigroup (PiecewisePoly a) where
   (<>) = curry $ piecewiseBinOp True $ uncurry (<>)
@@ -540,24 +493,29 @@ instance (Show a, Field a, Ord a) => Semigroup (PiecewisePoly a) where
 instance (Show a, Field a, Ord a) => Monoid (PiecewisePoly a) where
   mempty = piecewiseFromPoly mempty
 
-integralizePWLinear :: [Either (Poly Rational) (Poly Rational, Square Rational)] -> [Either (Either (Poly Integer) (Poly Rational)) (Poly Integer, Square Rational)]
+integralizePWLinear :: [Either (Poly Rational) (Separation Rational)] -> [Either (Either (Poly Integer) (Poly Rational)) (Separation' Rational Integer)]
 integralizePWLinear = fmap (bimap f g) where
   f :: Poly Rational -> Either (Poly Integer) (Poly Rational)
-  f x | (s, _) <- makeIntegral x, Prelude.abs s == 1 = Left $ fmap numerator x
+  f x | (s, _) <- makeIntegral x, Prelude.abs s == 1 = Left $ numerator <$> x
       | otherwise = Right x
 
-  g :: (Poly Rational, Square Rational) -> (Poly Integer, Square Rational)
-  g = first $ makeIntegral >>> snd
+  g :: Separation Rational -> Separation' Rational Integer
+  g (Dyadic x) = Dyadic x
+  g (Algebraic x) = Algebraic $ first (makeIntegral >>> snd) x
 
-showPWLinearIntegral :: [Either (Either (Poly Integer) (Poly Rational)) (Poly Integer, Square Rational)] -> String
+showPWLinearIntegral :: [Either (Either (Poly Integer) (Poly Rational)) (Separation' Rational Integer)] -> String
 showPWLinearIntegral = fmap (either f g >>> ("* " ++)) >>> ("piecewise polynomial in [0, 1]:" :) >>> unlines where
-  f :: Either (Poly Integer) (Poly Rational) -> String
-  f p = "piece " ++ s p where
-    s (Left p) = show (unP p)
-    s (Right p) = show (unP p)
+  show' :: forall a. (Show a) => Poly a -> String
+  show' = unP >>> show
 
-  g :: (Poly Integer, Square Rational) -> String
-  g (r, (b_0, b_1)) = "separated by root of " ++ show (unP r) ++ " between " ++ show b_0 ++ " and " ++ show b_1
+  f :: Either (Poly Integer) (Poly Rational) -> String
+  f p = "piece " ++ either show' show' p
+
+  g :: Separation' Rational Integer -> String
+  g p = "separated by " ++ s where
+    s = case p of
+      Dyadic x -> show x
+      Algebraic (r, (b_0, b_1)) -> "root of " ++ show' r ++ " between " ++ show b_0 ++ " and " ++ show b_1
 
 showPW :: PiecewisePoly Rational -> String
 showPW = linearizePW >>> integralizePWLinear >>> showPWLinearIntegral
@@ -565,15 +523,14 @@ showPW = linearizePW >>> integralizePWLinear >>> showPWLinearIntegral
 printPW :: PiecewisePoly Rational -> IO ()
 printPW = showPW >>> putStrLn
 
---testMinPW :: (Show a, Field a, Ord a) => Integer -> [PiecewisePoly a] -> PiecewisePoly a -> Maybe ()
-testMinPW :: Integer -> [PiecewisePoly Rational] -> PiecewisePoly Rational -> Maybe ()
-testMinPW n ps q = mayTrace ("testMinPW:\n" ++ showPW q ++ concat (fmap showPW ps)) $ forM_ [0..n-1] $ \k -> do
-  let x = k % n
-  let m = minimum (fmap (`evalPW` x) ps)
+testMinPW :: (Show a, Field a, Ord a) => Integer -> [PiecewisePoly a] -> PiecewisePoly a -> Maybe ()
+testMinPW n ps q = forM_ [0..n] $ \k -> do
+  let x = fromRational $ k % n
+  let m = minimum $ (`evalPW` x) <$> ps
   let m' = evalPW q x
   if m' == m
     then return ()
-    else mayTrace ("problem at " ++ show x ++ ": " ++ show m' ++ " vs. actual " ++ show m) Nothing
+    else error $ "testMinPW: problem at " ++ show x ++ ": " ++ show m' ++ " vs. actual " ++ show m -- ++ "\n" ++ showPW q ++ concatMap showPW ps
 
 -- -[a^2 X^2 + (1 - a)^2 (1 - X)] for a in [0, 1].
 -- This family of polynomials has minimum given by two pieces (given by a in {0, 1}).
