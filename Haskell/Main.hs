@@ -7,6 +7,7 @@ import Data.Maybe (isJust)
 import Data.Monoid (Endo(..))
 import Debug.Trace (trace)
 import Prelude hiding ((+), (-), (*))
+-- import Graphics.Gnuplot.Simple
 
 import DSLsofMath.Algebra
 
@@ -97,3 +98,14 @@ main = do
   putStrLn $ "maj5_2: " ++ showPW maj5_2
   putStrLn $ "maj3_2: " ++ showPW maj3_2
   putStrLn $ "maj3_3: " ++ showPW maj3_3
+
+----------------
+-- Preparing for some plotting (see Maj3_3.hs)
+
+pw3_2 :: Double -> Double
+pw3_2 p = Prelude.fromRational (evalPW maj3_2 (Prelude.toRational p))
+
+pw3_3 :: Double -> Double
+pw3_3 p = Prelude.fromRational (evalPW maj3_3 (Prelude.toRational p))
+
+-- plot3_3 = plotFunc [] (linearScale 1000 (0,1)) pw3_3
