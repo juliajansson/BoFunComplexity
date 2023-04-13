@@ -70,7 +70,7 @@ At 0.5 the difference is exactly (-10145) % 524288 ~= -0.01935, thus the relativ
 
 The difference varies between around +0.0139 (near 0.32) and around -0.0427 (near 0.68). The maximal relative difference is under 0.3% of the maximum of p8.
 
-img:plots/maj3_3_p8-p0.png
+A [plot of pdiff](plots/maj3_3_p8-p0.png).
 
 # Talks
 
