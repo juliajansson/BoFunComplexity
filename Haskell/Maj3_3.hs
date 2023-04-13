@@ -371,6 +371,9 @@ eps3_2 = plotFunc [EPS "pw3_2.eps"] (linearScale 1000 (0, 1)) pw3_2
 
 eps3_3 = plotFunc [EPS "pw3_3.eps"] (linearScale 1000 (0, 1)) pw3_3
 
+-- TODO extract the separate polynomials
+-- TODO plot their differences from the "middle one"
+
 main = do
   plot3_2
   plot3_3
