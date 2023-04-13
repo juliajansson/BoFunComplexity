@@ -3,9 +3,23 @@ Associated code for the paper "Level-p-complexity of Boolean Functions using Thi
 
 A preprint is available as [arXiv:2302.02473](https://arxiv.org/abs/2302.02473) and the associated code is available as release [tag/v2023-02.pre-print](https://github.com/juliajansson/BoFunComplexity/releases/tag/v2023-02.pre-print) as the code continues to evolve.
 
+The code was later extended by Christian Sattler.
+
 # Piecewise polynomials (example results)
 
-## 3-level interated 3-bit majority:
+All polynomials are described by their list of coefficients starting from degree 0: [1,7,3] means 1 + 7x + 3x^2.
+
+## 2-level iterated 3-bit majority:
+
+maj3_2: piecewise polynomial in [0, 1]:
++  1 piece [4,4,6,9,-61,23,67,-64,16]
+
+## 2-level iterated 5-bit majority:
+
+maj5_2: piecewise polynomial in [0, 1]:
++  1 piece [9,9,9,30,12,62,-14,816,-2143,-44004,169768,-291977,751873,-2494791,5464225,-8722210,13579067,-21830058,29475938,-29211477,20338155,-9697875,3027801,-559872,46656]
+
+## 3-level iterated 3-bit majority:
 We conjecture that this is the piecewise polynomial level-p-complexity function:
 
 Piecewise polynomial in [0, 1]:
