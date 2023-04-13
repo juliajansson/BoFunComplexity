@@ -69,3 +69,9 @@ piecewise polynomial in [0, 1]:
   Actually, probably better to plot the differences p i - pstar for
   pstar = p0 or pstar = pmiddle.
 + Some preparation done - see Maj3_3.hs
++ It would also be nice to prove some properties related to the
+  development. For example, that the class of "iterated threshold
+  functions" is closed under setBit, etc.
++ A write-up about the implementation of algebraic numbers, piecewise
+  polynomials, iterated threshold functions, and the top level
+  computation would also be good (and could make a research paper).
