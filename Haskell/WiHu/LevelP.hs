@@ -26,19 +26,20 @@ data Formula = Var --Leaf
              | TRUE --Used for normalization  -- could also be CGE 0 empty
   deriving (Eq,Ord,Read,Show)
 
---The Integers can only be positive
-type Bag = Map Formula Integer   -- [(Formula,Nat)]
+--The Ints can only be positive
+type Nat = Int
+type Bag = Map Formula Nat   -- roughly [(Formula,Nat)]
 -- CGE 1 (2*Var) ~= x1 || x2
 -- CGE 2 (3*Var) ~= maj3      
 -- CGE 2 (3*(CGE 2 (3*Var))) ~= maj3^2
 -- closed under "setBit i b"
 
 
---Default filter omitted for perf
+-- | Default filter omitted for perf
 add :: Bag -> Bag -> Bag
 add = M.unionWith (+)
 
-scale :: Integer -> Bag -> Bag
+scale :: Int -> Bag -> Bag
 scale = M.map . (*)
 
 --The result of evaluating one subexpr in a bag
@@ -54,7 +55,8 @@ replace from to = M.filter (>0) . add (M.fromList [(from,-1),(to,1)])
 --CGE 0 b = TRUE
 --CGE (n>0) {} = FALSE
 normReplace :: Formula -> Formula -> Formula -> Formula
-normReplace (CGE n b) from | n <= 0 || M.lookup from b == Nothing = error "normReplace: Bad precond"
+normReplace (CGE n b) from
+  | n <= 0 || M.lookup from b == Nothing = error "normReplace: Bad precond"
   | otherwise = \case
   FALSE ->
     let b' = M.filter (>0) $ add (M.fromList [(from,-1)]) b
@@ -63,12 +65,15 @@ normReplace (CGE n b) from | n <= 0 || M.lookup from b == Nothing = error "normR
     let n' = n - 1
         b' = M.filter (>0) $ add (M.fromList [(from,-1)]) b
     in cge n' b'
-  to -> CGE n (replace from to b)
+  to -> cge n (replace from to b)
 
+-- | Smart constructor which does some normalisation.
+-- TODO more may be needed (applied recursively, etc.)
 cge 0 b = TRUE
-cge n b | b == M.empty = FALSE
-        | otherwise    = CGE n b
-
+cge n b = case M.toList (M.filter (>0) b) of
+  []       -> FALSE
+  [(f,1)]  -> if n>1 then FALSE else f
+  _        -> CGE n b
 
 --Note: only graphs with an equal number of vars can be isomorphic.
 --Consequently, I could use an array of maps rather than a single map for
@@ -131,7 +136,7 @@ step = \case Var -> [([],FALSE,TRUE)]
 
 --Functions for building formulae ergonomically, using argument lists
 maj :: [Formula] -> Formula
-maj xs = CGE (succ $ length xs `div` 2) $ listToBag xs
+maj xs = cge (succ $ length xs `div` 2) $ listToBag xs
 
 majN n x = maj $ replicate n x
 
@@ -143,19 +148,22 @@ ex1 = majN 3 $ majN 3 Var
 maj3 = majN 3 Var
 
 test p = solver p maj3
-test2 p = runState (solve p maj3) M.empty
+test' p = runState (solve p maj3) M.empty
+test5 f = runState (solve 0.5 f) M.empty
 
-{-
-((2.875,
-  Eval [0] (Eval [0] (Eval [0] (Answer False) (Eval [0] (Answer False) (Answer True))) (Eval [0] (Answer False) (Answer True))) (Eval [0] (Eval [0] (Answer False) (Answer True)) (Answer True))),
+-- Simple example functions
+simpleFuns :: [Formula]
+simpleFuns = [FALSE, cge 1 M.empty, TRUE, cge 0 M.empty, Var]
 
- fromList
-  [(CGE 1 (fromList [(Var,0)]),   (1.0,Eval [0] (Answer False) (Answer True))),
-   (CGE 1 (fromList [(Var,1)]),   (1.0,Eval [0] (Answer False) (Answer True))),
-   (CGE 1 (fromList [(Var,2)]),   (1.5,Eval [0] (Eval [0] (Answer False) (Answer True)) (Answer True))),
-   (CGE 2 (fromList [(Var,1)]),   (1.5,Eval [0] (Answer False) (Eval [0] (Answer False) (Answer True)))),
-   (CGE 2 (fromList [(Var,2)]),   (2.25,Eval [0] (Eval [0] (Answer False) (Eval [0] (Answer False) (Answer True))) (Eval [0] (Answer False) (Answer True)))),
+-- Some test cases:
 
-   (CGE 2 (fromList [(Var,3)]),   (2.875,Eval [0] (Eval [0] (Eval [0] (Answer False) (Eval [0] (Answer False) (Answer True))) (Eval [0] (Answer False) (Answer True))) (Eval [0] (Eval [0] (Answer False) (Answer True)) (Answer True))))])
-λ> 
--}
+-- | Family of n-ary and and or gates (for n>=0)
+andn, orn :: Nat -> Formula
+andn n = cge n (M.fromList [(Var, n)])
+orn  n = cge 1 (M.fromList [(Var, n)])
+
+-- | maj3 reduces to and + or
+test0 = step maj3 == [([0], andn 2, orn 2)]
+test1 = step (orn  2) == [([0], Var, TRUE)]   -- requires simplification of some [(f,1)] |-> f
+test2 = step (andn 2) == [([0], FALSE, Var)]  -- requires simplification of some [(f,1)] |-> FALSE
+
