@@ -1,4 +1,4 @@
--- code by Liam Hughes (work in progress)
+-- Initial code by Liam Hughes (work in progress). Bug fixes by Patrik Jansson.
 {-# LANGUAGE LambdaCase #-}
 module LevelP where
 
@@ -30,7 +30,7 @@ data Formula = Var --Leaf
 type Nat = Int
 type Bag = Map Formula Nat   -- roughly [(Formula,Nat)]
 -- CGE 1 (2*Var) ~= x1 || x2
--- CGE 2 (3*Var) ~= maj3      
+-- CGE 2 (3*Var) ~= maj3
 -- CGE 2 (3*(CGE 2 (3*Var))) ~= maj3^2
 -- closed under "setBit i b"
 
@@ -86,7 +86,7 @@ data DecisionTree = Answer Bool                          -- Res
   deriving (Eq,Ord,Read,Show)
 
 -- implicitly assumes a probability p as a parameter
-type Memotable = Map Formula (Double,DecisionTree)  -- expected cost for an optimal tree (and such a tree) 
+type Memotable = Map Formula (Double,DecisionTree)  -- expected cost for an optimal tree (and such a tree)
 --The tree will be very large, but also very shared... TODO make sharing
 --explicit so one can persist and ppr the tree.
 --2^27 is 128M...
@@ -115,7 +115,7 @@ solve p = \case
                  | otherwise        = minimum candidates
         modify (M.insert t best)
         return best
-        
+
 solver :: Double -> Formula -> (Double,DecisionTree)
 solver p f = evalState (solve p f) M.empty
 
@@ -143,7 +143,8 @@ majN n x = maj $ replicate n x
 listToBag :: [Formula] -> Bag
 listToBag = foldr add M.empty . map (flip M.singleton 1)
 
-ex1 = majN 3 $ majN 3 Var
+maj3_2 = majN 3 (majN 3 Var)
+maj3_3 = majN 3 maj3_2
 
 maj3 = majN 3 Var
 
@@ -151,9 +152,17 @@ test p = solver p maj3
 test' p = runState (solve p maj3) M.empty
 test5 f = runState (solve 0.5 f) M.empty
 
+-- | Computation of costs for 3-level iterated majority at two different probabilities.
+test3_3_5@((cost3_3_5,dectree3_3_5), memo3_3_5) = test5 maj3_3
+test3_3_1@((cost3_3_1,dectree3_3_1), memo3_3_1) = runState (solve 0.1 maj3_3) M.empty
+-- cost3_3_5 == 15.064288139343262
+-- cost3_3_1 ==  8.940462736978825
+
+
+
 -- Simple example functions
 simpleFuns :: [Formula]
-simpleFuns = [FALSE, cge 1 M.empty, TRUE, cge 0 M.empty, Var]
+simpleFuns = [FALSE, cge 1 M.empty, TRUE, cge 0 M.empty, Var, orn 1, andn 1, orn 2, andn 2]
 
 -- Some test cases:
 
@@ -162,8 +171,22 @@ andn, orn :: Nat -> Formula
 andn n = cge n (M.fromList [(Var, n)])
 orn  n = cge 1 (M.fromList [(Var, n)])
 
--- | maj3 reduces to and + or
-test0 = step maj3 == [([0], andn 2, orn 2)]
-test1 = step (orn  2) == [([0], Var, TRUE)]   -- requires simplification of some [(f,1)] |-> f
-test2 = step (andn 2) == [([0], FALSE, Var)]  -- requires simplification of some [(f,1)] |-> FALSE
+andl, orl :: [Formula] -> Formula
+andl fs = cge (length fs)  (listToBag fs)
+orl  fs = cge 1            (listToBag fs)
 
+-- | maj3 reduces to and + or
+maj3test0 = step maj3 == [([0], andn 2, orn 2)]
+maj3test1 = step (orn  2) == [([0], Var, TRUE)]   -- requires simplification of some [(f,1)] |-> f
+maj3test2 = step (andn 2) == [([0], FALSE, Var)]  -- requires simplification of some [(f,1)] |-> FALSE
+
+-- Some tests of the reductions of maj3_2
+
+maj32test1 =
+  step maj3_2  ==  [([0,0],  maj [ andn 2, maj3, maj3],
+                             maj [ orn  2, maj3, maj3])]
+
+maj32test2 =
+  step (maj [ andn 2, maj3, maj3]) ==
+  [([0,0],  andl [maj3, maj3]         ,  maj [Var,    maj3,   maj3]),
+   ([1,0],  maj [andn 2, andn 2, maj3],  maj [andn 2, orn  2, maj3])]
