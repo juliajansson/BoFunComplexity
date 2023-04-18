@@ -88,15 +88,15 @@ A [plot of pdiff](plots/maj3_3_p8-p0.png).
 
 To sum up, if a_k is the cost at p=0.5 of the k-level iterated 3-bit majority, we have
 
-a_1 = 5/2 = 2.5
-a_2 = 393/64 = 6.140625
-a_3 = 15796051 % 1048576 ≃ 15.064288139343262
++ a_1 = 5/2 = 2.5
++ a_2 = 393/64 = 6.140625
++ a_3 = 15796051 % 1048576 ≃ 15.064288139343262
 
 There is a proof in the literature that a_k^(1/k) will converge to some 2.25 <= L < 2.5 and that the limit is equal to (lim inf a_k^(1/k)). 
 
-a_1^(1/1) = 2.5
-a_2^(1/2) ≃ 2.478028450199876
-a_3^(1/3) ≃ 2.4697303458263957
++ a_1^(1/1) = 2.5
++ a_2^(1/2) ≃ 2.478028450199876
++ a_3^(1/3) ≃ 2.4697303458263957
 
 Thus, we can see that L < 2.47 - a very slight improvement on L < 2.5.
 
