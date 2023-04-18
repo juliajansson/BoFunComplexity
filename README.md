@@ -9,10 +9,20 @@ The code was later extended by Christian Sattler.
 
 All polynomials are described by their list of coefficients starting from degree 0: [1,7,3] means 1 + 7x + 3x^2.
 
+## 3-bit majority
+
+maj3: 1 piece [2,2,-2]
+
+cost(0.5) = 5/2 = 2.5
+
 ## 2-level iterated 3-bit majority:
 
 maj3_2: piecewise polynomial in [0, 1]:
 +  1 piece [4,4,6,9,-61,23,67,-64,16]
+
+cost(0.5) = 393/64 = 6.140625
+
+sqrt (cost(0.5)) ~= 2.478028450199876
 
 ## 2-level iterated 5-bit majority:
 
@@ -62,6 +72,8 @@ All p_i have value 8 at both endpoints and around 15 in the middle.
 
 The value at 0.5 is exactly 15796051 % 1048576 (rounded to Double precision: 15.064288139343262).
 
+  (15.064288139343262)**(1/3) = 2.4697303458263957
+
 The pieces are very close: for example let pdiff = p8-p0, then
 
   pdiff = P [0,0,0,0,6,6,-132,242,-141,96,1211,-5729,10617,-16741,30916,-30497,-32267,145346,-220795,203511,-129594,60922,-21949,5960,-1084,96,0]
@@ -71,6 +83,24 @@ At 0.5 the difference is exactly (-10145) % 524288 ~= -0.01935, thus the relativ
 The difference varies between around +0.0139 (near 0.32) and around -0.0427 (near 0.68). The maximal relative difference is under 0.3% of the maximum of p8.
 
 A [plot of pdiff](plots/maj3_3_p8-p0.png).
+
+## Hints at asymptotic behaviour
+
+To sum up, if a_k is the cost at p=0.5 of the k-level iterated 3-bit majority, we have
+
+a_1 = 5/2 = 2.5
+a_2 = 393/64 = 6.140625
+a_3 = 15796051 % 1048576 ≃ 15.064288139343262
+
+There is a proof in the literature that a_k^(1/k) will converge to some 2.25 <= L < 2.5 and that the limit is equal to (lim inf a_k^(1/k)). 
+
+a_1^(1/1) = 2.5
+a_2^(1/2) ≃ 2.478028450199876
+a_3^(1/3) ≃ 2.4697303458263957
+
+Thus, we can see that L < 2.47 - a very slight improvement on L < 2.5.
+
+We can conjecture that a_4^(1/4) is close to 2.47^4 ≃ 37.2.
 
 # Talks
 

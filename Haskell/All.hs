@@ -10,7 +10,7 @@ import qualified Data.Set as S (Set, singleton, toList, fromList, foldl,
                                 size, map, member, insert, empty, filter)
 import qualified Data.IntSet as IS (toList)
 import qualified Data.IntMap as IM (fromList)
-import DSLsofMath.PSDS as Poly (Poly(P), xP, evalP)
+import DSLsofMath.PSDS as Poly (Poly(P), xP, evalP, degree)
 import DSLsofMath.Algebra (Ring, zero, (+), (-), one, (*))
 import Data.DecisionDiagram.BDD as BDD
   (  BDD(Leaf, Branch), ItemOrder, AscOrder

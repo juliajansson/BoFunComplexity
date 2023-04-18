@@ -7,6 +7,7 @@ import qualified Data.Map as M
 --Nested modules would let me avoid this boilerplate...
 
 import Control.Monad.State
+import System.IO
 
 --Idea: preserve higher-level combinators such as majority in the graph.
 --maj/count greater or equal n has the nice property (like and, or, xor) that
@@ -145,6 +146,7 @@ listToBag = foldr add M.empty . map (flip M.singleton 1)
 
 maj3_2 = majN 3 (majN 3 Var)
 maj3_3 = majN 3 maj3_2
+maj3_4 = majN 3 maj3_3
 
 maj3 = majN 3 Var
 
@@ -152,13 +154,26 @@ test p = solver p maj3
 test' p = runState (solve p maj3) M.empty
 test5 f = runState (solve 0.5 f) M.empty
 
+-- | Computation of costs for 2-level iterated majority at two different probabilities.
+test3_2_5@((cost3_2_5,dectree3_2_5), memo3_2_5) = test5 maj3_2
+test3_2_1@((cost3_2_1,dectree3_2_1), memo3_2_1) = runState (solve 0.1 maj3_2) M.empty
+
 -- | Computation of costs for 3-level iterated majority at two different probabilities.
 test3_3_5@((cost3_3_5,dectree3_3_5), memo3_3_5) = test5 maj3_3
 test3_3_1@((cost3_3_1,dectree3_3_1), memo3_3_1) = runState (solve 0.1 maj3_3) M.empty
 -- cost3_3_5 == 15.064288139343262
 -- cost3_3_1 ==  8.940462736978825
 
+test3_4_5@((cost3_4_5,dectree3_4_5), memo3_4_5) = test5 maj3_4
+test3_4_1@((cost3_4_1,dectree3_4_1), memo3_4_1) = runState (solve 0.1 maj3_4) M.empty
 
+main = do  print test3_2_5;
+           putStrLn "----"
+           hFlush stdout
+           print test3_3_5;
+           putStrLn "----"
+           hFlush stdout
+           print test3_4_5 -- will probably take a _very_ long time
 
 -- Simple example functions
 simpleFuns :: [Formula]
