@@ -1,5 +1,6 @@
 module Maj3_3 where
-
+import qualified Prelude
+import DSLsofMath.Algebra
 import DSLsofMath.PSDS
 import Data.Ratio ((%))
 import Graphics.Gnuplot.Simple
@@ -345,6 +346,7 @@ maj3_3 =
                 )
             )
         )
+
     )
 
 maj3_2 :: PiecewisePoly Rational

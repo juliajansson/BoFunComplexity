@@ -68,10 +68,21 @@ piecewise polynomial in [0, 1]:
 + It would be nice to plot the 15 pieces together in one plot.
   Actually, probably better to plot the differences p i - pstar for
   pstar = p0 or pstar = pmiddle.
-+ Some preparation done - see Maj3_3.hs
++ Some preparation done - see file:Maj3_3.hs and
+  file:../plots/maj3_3_p8-p0.png
 + It would also be nice to prove some properties related to the
   development. For example, that the class of "iterated threshold
-  functions" is closed under setBit, etc.
+  functions" is closed under setBit, how threshold functions map to
+  equivalence classes of "regular" boolean functions, how to relate
+  decision trees for the threshold functions to "regular" decision
+  trees, etc.
 + A write-up about the implementation of algebraic numbers, piecewise
   polynomials, iterated threshold functions, and the top level
   computation would also be good (and could make a research paper).
+* TODOs
+** TODO clean-up and document the code
++ [[file:Threshold.hs::module Threshold where][Threshold functions]] [255 loc]
++ Algebraic numbers (perhaps extract an implementation separate from the rest)
+  (perhaps look at https://pypi.org/project/algebraics/)
++ [[file:PiecewisePoly.hs::module PiecewisePoly where][Piecewise polynomials]] (with bisection) [609 loc]
++ file:PolynomialExtra.hs [249 loc]
