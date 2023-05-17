@@ -189,7 +189,7 @@ radical p = if p == zero then zero else radical' p
 rationalGenerator :: (Euclidean a) => (Poly a, Poly a) -> (Poly a, (Poly a, Poly a))
 rationalGenerator (x, y) = if
   | y' <- normalPoly y, y' == zero -> (x, (one, zero))
-  | otherwise -> undefined
+  | otherwise -> error "TODO"
 
 reduce :: (Euclidean a) => (Int, [a]) -> (Int, [a])
 reduce (n, xs) = (n', xs') where

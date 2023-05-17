@@ -90,7 +90,7 @@ instance Bifunctor Zoomed where
 
 -- | Really this is an instance of Applicative for each fixed zoomData attribute.
 instance Applicative (Zoomed a) where
-  pure x = Zoomed x undefined x
+  pure x = Zoomed x (error "pure for Zoomed lacks zoomData attribute") x
   Zoomed fOrig z fZoomed <*> Zoomed xOrig _ xZoomed = Zoomed (fOrig xOrig) z (fZoomed xZoomed) 
 
 -- | Zoomed a is a pointed functor.
@@ -113,7 +113,7 @@ instance (Ring a) => ZoomableAddGroup a (Poly a)
 
 -- | These are really instances fibred over a given zoom data.
 instance (ZoomableAddGroup x a) => Additive (Zoomed x a) where
-  zero = undefined
+  zero = error "zero for Zoomed not really available"
   Zoomed o0 d z0 + Zoomed o1 _ z1 = Zoomed o d z where
     o = o0 + o1
     z = z0 + z1
