@@ -36,6 +36,7 @@ $(deriveMemoizable ''Threshold)
 instance Additive Threshold where
   zero = Threshold $ tabulateBool $ const zero
   Threshold a + Threshold b = Threshold $ tabulateBool $ \i -> lookupBool a i + lookupBool b i
+-- TODO: perhaps generalise to some finite type instead of just Bool
 
 instance AddGroup Threshold where
   negate (Threshold t) = Threshold $ tabulateBool $ lookupBool t >>> negate
