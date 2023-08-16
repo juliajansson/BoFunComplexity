@@ -1,9 +1,11 @@
 # BoFunComplexity
-Associated code for the paper "Level-p-complexity of Boolean Functions using Thinning, Memoization, and Polynomials" (under submission to JFP) by Julia and Patrik Jansson.
+Associated code for the paper "Level-p-complexity of Boolean Functions using Thinning, Memoization, and Polynomials" (under submission to JFP) by Julia Jansson and Patrik Jansson.
 
 A preprint is available as [arXiv:2302.02473](https://arxiv.org/abs/2302.02473) and the associated code is available as release [tag/v2023-02.pre-print](https://github.com/juliajansson/BoFunComplexity/releases/tag/v2023-02.pre-print) as the code continues to evolve.
 
 The code was later extended by Christian Sattler.
+
+(The first JFP submission 2023-02 received positive reviews leading to a resubmission 2023-08.)
 
 # Piecewise polynomials (example results)
 
@@ -67,7 +69,7 @@ See also [the plot](plots/pw3_3.eps).
 
 ### More details
 
-Name the polynomial pieces p0 .. p15 where pmid=p8 is the middle piece.
+Name the polynomial pieces p1 .. p15 where pmid=p8 is the middle piece.
 All p_i have value 8 at both endpoints and around 15 in the middle.
 
 The value at 0.5 is exactly 15796051 % 1048576 (rounded to Double precision: 15.064288139343262).
@@ -100,7 +102,7 @@ There is a proof in the literature that a_k^(1/k) will converge to some 2.25 <= 
 
 Thus, we can see that L < 2.47 - a very slight improvement on L < 2.5.
 
-We can conjecture that a_4^(1/4) is close to 2.47^4 ≃ 37.2.
+We can conjecture that a_4^(1/4) is close to 2.47, thus a_4 is close to 2.47^4 ≃ 37.2.
 
 # Talks
 
