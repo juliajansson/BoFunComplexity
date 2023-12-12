@@ -1,4 +1,7 @@
 # BoFunComplexity
+Update 2023-12-12: The paper has now been published in Journal of Functional Programming: [Here is the link!](https://www.cambridge.org/core/journals/journal-of-functional-programming/article/levelpcomplexity-of-boolean-functions-using-thinning-memoization-and-polynomials/58122B71C40F99E0D19ACD0FAFF867A9#article). A note on page 19, the sentence "The difference, illustrated in Figure 3, factors to exactly and we note that it is non-negative in the whole interval." should be "The difference, illustrated in Figure 3, factors
+to exactly $p^2(1-p)^2(1-p+p^2)$ and we note that it is non-negative in the whole interval."
+
 Associated code for the paper "Level-p-complexity of Boolean Functions using Thinning, Memoization, and Polynomials" (under submission to JFP) by Julia Jansson and Patrik Jansson.
 
 A preprint is available as [arXiv:2302.02473](https://arxiv.org/abs/2302.02473) and the associated code is available as release [tag/v2023-02.pre-print](https://github.com/juliajansson/BoFunComplexity/releases/tag/v2023-02.pre-print) as the code continues to evolve.
