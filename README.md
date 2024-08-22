@@ -135,3 +135,9 @@ Thus, we can see that L < 2.47 - a very slight improvement on L < 2.5.
 
 We can conjecture that a_4^(1/4) is close to 2.47, thus a_4 is close to 2.47^4 ≃ 37.2.
 
+# Notes
+
+## Upgrade problem
+
+When trying to move from ghc-9.4.8 to ghc-9.6.5, I got a ghc error in (Threshold.hs)[Haskell/Threshold.hs] around the definition of instance Ord1 ThresholdFun.
+
