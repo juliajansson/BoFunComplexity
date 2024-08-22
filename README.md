@@ -1,14 +1,6 @@
 # BoFunComplexity
 Update 2023-12-12: The paper has now been published in Journal of Functional Programming: [https://doi.org/10.1017/S0956796823000102](https://www.cambridge.org/core/journals/journal-of-functional-programming/article/levelpcomplexity-of-boolean-functions-using-thinning-memoization-and-polynomials/58122B71C40F99E0D19ACD0FAFF867A9#article).
 
-A note on page 19, the sentence
-
-    "The difference, illustrated in Figure 3, factors to exactly and we note that it is non-negative in the whole interval."
-
-should be
-
-    "The difference, illustrated in Figure 3, factors to exactly $p^2(1-p)^2(1-p+p^2)$ and we note that it is non-negative in the whole interval."
-
 Associated code for the paper "Level-p-complexity of Boolean Functions using Thinning, Memoization, and Polynomials" (published in JFP as [doi:10.1017/S0956796823000102](https://doi.org/10.1017/S0956796823000102)) by Julia Jansson and Patrik Jansson.
 
 A preprint is available as [arXiv:2302.02473](https://arxiv.org/abs/2302.02473) and the associated code is available as release [tag/v2023-02.pre-print](https://github.com/juliajansson/BoFunComplexity/releases/tag/v2023-02.pre-print) as the code continues to evolve.
@@ -30,7 +22,21 @@ The code was later extended by Christian Sattler.
   pages =	 {e13}
 }
 ```
+# Errata
 
+On page 19, the sentence
+
+    "The difference [...] factors to exactly and we note that it is non-negative in the whole interval."
+
+should be
+
+    "The difference [...] factors to exactly $p^2(1-p)^2(1-p+p^2)$ and we note that it is non-negative in the whole interval."
+
+# Talks
+
+* 2022-12: Patrik Jansson gave a talk at the 2012-12 online meeting of IFIP WG 2.1 on Algorithmic Languages and Calculi. The recording is available [on YouTube](https://www.youtube.com/watch?v=95rhCROOOdA) and the slides [here](talk/2022-12_Jansson_RandComplex.pdf).
+* 2023-03: [Slides](talk/2023-03_Jansson_RandComplex.pdf), [YouTube recording](https://youtu.be/Z0cACMp8_hk)
+* 2024-09: The paper will be presented at ICFP'2024 in the "[JFP First](https://icfp24.sigplan.org/details/icfp-2024-jfp-first-papers/4/Level-p-complexity-of-Boolean-functions-using-thinning-memoization-and-polynomials)" track.
 
 # Piecewise polynomials (example results)
 
@@ -129,8 +135,3 @@ Thus, we can see that L < 2.47 - a very slight improvement on L < 2.5.
 
 We can conjecture that a_4^(1/4) is close to 2.47, thus a_4 is close to 2.47^4 ≃ 37.2.
 
-# Talks
-
-* 2022-12: Patrik Jansson gave a talk at the 2012-12 online meeting of IFIP WG 2.1 on Algorithmic Languages and Calculi. The recording is available [on YouTube](https://www.youtube.com/watch?v=95rhCROOOdA) and the slides [here](talk/2022-12_Jansson_RandComplex.pdf).
-* 2023-03: [Slides](talk/2023-03_Jansson_RandComplex.pdf), [YouTube recording](https://youtu.be/Z0cACMp8_hk)
-* 2024-09: The paper will be presented at ICFP'2024 in the "[JFP First](https://icfp24.sigplan.org/details/icfp-2024-jfp-first-papers/4/Level-p-complexity-of-Boolean-functions-using-thinning-memoization-and-polynomials)" track.

@@ -13,7 +13,7 @@ maintainer:          julia.jansson@gmail.com
 category:            Math
 build-type:          Simple
 extra-source-files:  README.md
-tested-with: GHC==9.2.5
+tested-with: GHC ==9.2.5 || ==9.2.8 || ==9.4.8 || ==9.6.3
 
 library
   exposed-modules:     BDD.Examples, BDD.Ordering, PolyCmp, Algor, Thin, Memo, All, AllProp
