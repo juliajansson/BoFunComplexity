@@ -1,14 +1,36 @@
 # BoFunComplexity
-Update 2023-12-12: The paper has now been published in Journal of Functional Programming: [https://doi.org/10.1017/S0956796823000102](https://www.cambridge.org/core/journals/journal-of-functional-programming/article/levelpcomplexity-of-boolean-functions-using-thinning-memoization-and-polynomials/58122B71C40F99E0D19ACD0FAFF867A9#article). A note on page 19, the sentence "The difference, illustrated in Figure 3, factors to exactly and we note that it is non-negative in the whole interval." should be "The difference, illustrated in Figure 3, factors
-to exactly $p^2(1-p)^2(1-p+p^2)$ and we note that it is non-negative in the whole interval."
+Update 2023-12-12: The paper has now been published in Journal of Functional Programming: [https://doi.org/10.1017/S0956796823000102](https://www.cambridge.org/core/journals/journal-of-functional-programming/article/levelpcomplexity-of-boolean-functions-using-thinning-memoization-and-polynomials/58122B71C40F99E0D19ACD0FAFF867A9#article).
 
-Associated code for the paper "Level-p-complexity of Boolean Functions using Thinning, Memoization, and Polynomials" (under submission to JFP) by Julia Jansson and Patrik Jansson.
+A note on page 19, the sentence
+
+    "The difference, illustrated in Figure 3, factors to exactly and we note that it is non-negative in the whole interval."
+
+should be
+
+    "The difference, illustrated in Figure 3, factors to exactly $p^2(1-p)^2(1-p+p^2)$ and we note that it is non-negative in the whole interval."
+
+Associated code for the paper "Level-p-complexity of Boolean Functions using Thinning, Memoization, and Polynomials" (published in JFP as [doi:10.1017/S0956796823000102](https://doi.org/10.1017/S0956796823000102)) by Julia Jansson and Patrik Jansson.
 
 A preprint is available as [arXiv:2302.02473](https://arxiv.org/abs/2302.02473) and the associated code is available as release [tag/v2023-02.pre-print](https://github.com/juliajansson/BoFunComplexity/releases/tag/v2023-02.pre-print) as the code continues to evolve.
 
 The code was later extended by Christian Sattler.
 
-(The first JFP submission 2023-02 received positive reviews leading to a resubmission 2023-08.)
+(The first JFP submission 2023-02 received positive reviews leading to a resubmission 2023-08, [published online 2023-12-12](https://doi.org/10.1017/S0956796823000102).)
+
+``` BibTeX
+@article{jansson_jansson_2023,
+  title =	 {Level-p-complexity of {Boolean} functions using
+              thinning, memoization, and polynomials},
+  volume =	 33,
+  DOI =		 {10.1017/S0956796823000102},
+  journal =	 {Journal of Functional Programming},
+  publisher ={Cambridge University Press},
+  author =	 {Jansson, Julia and Jansson, Patrik},
+  year =	 2023,
+  pages =	 {e13}
+}
+```
+
 
 # Piecewise polynomials (example results)
 
@@ -97,7 +119,7 @@ To sum up, if a_k is the cost at p=0.5 of the k-level iterated 3-bit majority, w
 + a_2 = 393/64 = 6.140625
 + a_3 = 15796051 % 1048576 ≃ 15.064288139343262
 
-There is a proof in the literature that a_k^(1/k) will converge to some 2.25 <= L < 2.5 and that the limit is equal to (lim inf a_k^(1/k)). 
+There is a proof in the literature that a_k^(1/k) will converge to some 2.25 <= L < 2.5 and that the limit is equal to (lim inf a_k^(1/k)).
 
 + a_1^(1/1) = 2.5
 + a_2^(1/2) ≃ 2.478028450199876
@@ -111,3 +133,4 @@ We can conjecture that a_4^(1/4) is close to 2.47, thus a_4 is close to 2.47^4 �
 
 * 2022-12: Patrik Jansson gave a talk at the 2012-12 online meeting of IFIP WG 2.1 on Algorithmic Languages and Calculi. The recording is available [on YouTube](https://www.youtube.com/watch?v=95rhCROOOdA) and the slides [here](talk/2022-12_Jansson_RandComplex.pdf).
 * 2023-03: [Slides](talk/2023-03_Jansson_RandComplex.pdf), [YouTube recording](https://youtu.be/Z0cACMp8_hk)
+* 2024-09: The paper will be presented at ICFP'2024 in the "[JFP First](https://icfp24.sigplan.org/details/icfp-2024-jfp-first-papers/4/Level-p-complexity-of-Boolean-functions-using-thinning-memoization-and-polynomials)" track.
