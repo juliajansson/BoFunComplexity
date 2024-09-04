@@ -36,7 +36,7 @@ should be
 
 * 2022-12: Patrik Jansson gave a talk at the 2012-12 online meeting of IFIP WG 2.1 on Algorithmic Languages and Calculi. The recording is available [on YouTube](https://www.youtube.com/watch?v=95rhCROOOdA) and the slides [here](talk/2022-12_Jansson_RandComplex.pdf).
 * 2023-03: [Slides](talk/2023-03_Jansson_RandComplex.pdf), [YouTube recording](https://youtu.be/Z0cACMp8_hk)
-* 2024-09: The paper will be presented at ICFP'2024 in the "[JFP First](https://icfp24.sigplan.org/details/icfp-2024-jfp-first-papers/4/Level-p-complexity-of-Boolean-functions-using-thinning-memoization-and-polynomials)" track.
+* 2024-09: The paper was presented at ICFP'2024 in the "[JFP First](https://icfp24.sigplan.org/details/icfp-2024-jfp-first-papers/4/Level-p-complexity-of-Boolean-functions-using-thinning-memoization-and-polynomials)" track. [Slides](talk/2024-09_Jansson_ICFP.pdf). (Link to Youtube recording will follow.)
 
 # Piecewise polynomials (example results)
 
